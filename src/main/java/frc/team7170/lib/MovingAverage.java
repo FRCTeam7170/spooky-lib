@@ -2,6 +2,7 @@ package frc.team7170.lib;
 
 import java.util.ArrayList;
 
+// TODO: implement as ring instead
 public class MovingAverage {
 
     private final ArrayList<Double> numbers;
