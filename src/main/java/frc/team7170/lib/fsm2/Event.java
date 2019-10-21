@@ -2,7 +2,7 @@ package frc.team7170.lib.fsm2;
 
 import java.util.Map;
 
-public class Event {
+public final class Event {
 
     public final FiniteStateMachine machine;
     public final State src;

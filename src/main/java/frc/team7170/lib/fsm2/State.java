@@ -1,6 +1,6 @@
 package frc.team7170.lib.fsm2;
 
-// TODO: warn about changing return of methods
+// TODO: warn about changing return of methods (undef behaviour)
 public interface State {
     String name();
 
