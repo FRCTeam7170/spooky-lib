@@ -28,18 +28,19 @@ public final class Transition {
             if (srcs.size() == 0) {
                 throw new IllegalArgumentException("transitions must have at least one src state");
             }
-            // Make sure srcs does not contain any nulls.
-            boolean throwNPE = false;
-            try {
-                if (srcs.contains(null)) {
-                    throwNPE = true;
+            for (State s : srcs) {
+                // Make sure there are no null srcs.
+                if (s == null) {
+                    throw new NullPointerException("transitions cannot have any null src states");
                 }
-            } catch (NullPointerException e) {
-                // Ignore. List implementations can throw NPE on containment check for null if they do not support null
-                // elements.
+                // Make sure all srcs are accessible. (Technically there is no harm in having an inaccessible src but a
+                // transition from an inaccessible src is impossible so it is a user error.)
+                if (!s.accessible()) {
+                    throw new IllegalArgumentException("transition src states must be accessible");
+                }
             }
-            if (throwNPE) {
-                throw new NullPointerException("transitions cannot have any null src states");
+            if (dst != null && !dst.accessible()) {
+                throw new IllegalArgumentException("transition dst states must be accessible");
             }
         }
 

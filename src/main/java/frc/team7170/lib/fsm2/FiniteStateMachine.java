@@ -6,6 +6,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+// TODO: add callbacks as suplliers of boolean / runnable
+// TODO: getter for ignoreMistrigger
 public final class FiniteStateMachine {
 
     public static final String SUB_STATE_SEP = "/";
@@ -265,6 +267,9 @@ public final class FiniteStateMachine {
     }
 
     public void forceTo(State state, Map<String, Object> args) {
+        if (!state.accessible()) {
+            throw new IllegalArgumentException("cannot enter inaccessible state");
+        }
         if (args == null) {
             args = Map.of();
         }
@@ -289,10 +294,10 @@ public final class FiniteStateMachine {
         return trigger(trgr, Map.of());
     }
 
+    // TODO: make sure trigger is valid or document that this will fail if trigger is invalid
     public boolean trigger(String trgr, Map<String, Object> args) {
         Transition transition = findValidTransition(Objects.requireNonNull(trgr, "trigger must be non-null"));
         if (transition == null) {
-            // TODO: make sure trigger is valid?
             if (!ignoreMistrigger && !currState.ignoreMistrigger()) {
                 throw new IllegalStateException(
                         String.format("cannot use trigger '%s' in state '%s'", trgr, currState.name())
