@@ -4,8 +4,8 @@ import java.util.function.Consumer;
 
 class BaseState implements State {
 
-    final String name;
-    State parent;
+    private final String name;
+    private State parent;
     boolean accessible = false;
     boolean ignoreMistrigger = false;
     Consumer<Event> onEnter = null;
