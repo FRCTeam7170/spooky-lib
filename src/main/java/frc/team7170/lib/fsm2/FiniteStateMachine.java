@@ -8,6 +8,8 @@ import java.util.stream.Stream;
 
 // TODO: add callbacks as suplliers of boolean / runnable
 // TODO: getter for ignoreMistrigger
+// TODO: thread safety
+// TODO: logging
 public final class FiniteStateMachine {
 
     public static final String SUB_STATE_SEP = "/";
@@ -339,9 +341,11 @@ public final class FiniteStateMachine {
         if (!transition.before(event)) {
             return false;  // Abort.
         }
-        currState.onExit(event);
-        currState = dst;
-        dst.onEnter(event);
+        if (!transition.isInternal()) {
+            currState.onExit(event);
+            currState = dst;
+            dst.onEnter(event);
+        }
         transition.after(event);
         afterStateChange(event);
         return true;
