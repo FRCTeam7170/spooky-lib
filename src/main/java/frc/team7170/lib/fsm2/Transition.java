@@ -35,11 +35,11 @@ public final class Transition {
                 }
                 // Make sure all srcs are accessible. (Technically there is no harm in having an inaccessible src but a
                 // transition from an inaccessible src is impossible so it is a user error.)
-                if (!s.accessible()) {
+                if (!s.isAccessible()) {
                     throw new IllegalArgumentException("transition src states must be accessible");
                 }
             }
-            if (dst != null && !dst.accessible()) {
+            if (dst != null && !dst.isAccessible()) {
                 throw new IllegalArgumentException("transition dst states must be accessible");
             }
         }

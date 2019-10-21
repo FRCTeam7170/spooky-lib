@@ -4,15 +4,15 @@ package frc.team7170.lib.fsm2;
 public interface State {
     String name();
 
-    default State parent() {
+    default State getParent() {
         return null;
     }
 
-    default boolean accessible() {
+    default boolean isAccessible() {
         return true;
     }
 
-    default boolean ignoreMistrigger() {
+    default boolean getIgnoreMistrigger() {
         return false;
     }
 

@@ -269,7 +269,7 @@ public final class FiniteStateMachine {
     }
 
     public void forceTo(State state, Map<String, Object> args) {
-        if (!state.accessible()) {
+        if (!state.isAccessible()) {
             throw new IllegalArgumentException("cannot enter inaccessible state");
         }
         if (args == null) {
@@ -300,7 +300,7 @@ public final class FiniteStateMachine {
     public boolean trigger(String trgr, Map<String, Object> args) {
         Transition transition = findValidTransition(Objects.requireNonNull(trgr, "trigger must be non-null"));
         if (transition == null) {
-            if (!ignoreMistrigger && !currState.ignoreMistrigger()) {
+            if (!ignoreMistrigger && !currState.getIgnoreMistrigger()) {
                 throw new IllegalStateException(
                         String.format("cannot use trigger '%s' in state '%s'", trgr, currState.name())
                 );
@@ -364,17 +364,17 @@ public final class FiniteStateMachine {
     public static String fullName(State state) {
         StringBuilder sb = new StringBuilder();
         sb.append(state.name());
-        state = state.parent();
+        state = state.getParent();
         while (state != null) {
             sb.append(FiniteStateMachine.SUB_STATE_SEP);
             sb.append(state.name());
-            state = state.parent();
+            state = state.getParent();
         }
         return sb.toString();
     }
 
     private static boolean inLineage(State q, State l) {
-        for (; q != null; q = q.parent()) {
+        for (; q != null; q = q.getParent()) {
             if (q == l) {
                 return true;
             }

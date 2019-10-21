@@ -22,17 +22,17 @@ class BaseState implements State {
     }
 
     @Override
-    public State parent() {
+    public State getParent() {
         return parent;
     }
 
     @Override
-    public boolean accessible() {
+    public boolean isAccessible() {
         return accessible;
     }
 
     @Override
-    public boolean ignoreMistrigger() {
+    public boolean getIgnoreMistrigger() {
         return ignoreMistrigger;
     }
 
