@@ -3,14 +3,15 @@ package frc.team7170.lib.fsm2;
 import java.util.Map;
 
 /**
- * {@code Event} represents the immutable context for a state change in a {@link FiniteStateMachine FiniteStateMachine}.
+ * {@code Event} represents the immutable context for a transition/state change in a
+ * {@link FiniteStateMachine FiniteStateMachine}.
  *
  * @author Robert Russell
  */
 public final class Event {
 
     /**
-     * The {@link FiniteStateMachine FiniteStatemachine} in which the state change occurred.
+     * The {@link FiniteStateMachine FiniteStatemachine} in which the transition/state change occurred.
      */
     public final FiniteStateMachine machine;
 

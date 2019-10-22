@@ -71,11 +71,11 @@ public final class Transition {
 
         /**
          * <p>
-         * Register a callback to be run before this transition executes. The associated state change context (i.e.
+         * Register a callback to be run before this transition executes. The associated transition context (i.e.
          * {@link Event Event} object) is ignored.
          * </p>
          * <p>
-         * The callback should return quickly, lest the rest of the state change procedure will be delayed.
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
          * <p>
          * Only one before callback can be registered; multiple calls to any version of the {@code before} method will
@@ -100,7 +100,7 @@ public final class Transition {
          * Register a callback accepting an {@link Event Event} object to be run before this transition executes.
          * </p>
          * <p>
-         * The callback should return quickly, lest the rest of the state change procedure will be delayed.
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
          * <p>
          * Only one before callback can be registered; multiple calls to any version of the {@code before} method will
@@ -123,11 +123,11 @@ public final class Transition {
         /**
          * <p>
          * Register a callback accepting an {@link Event Event} object to be run before this transition executes. The
-         * callback returns a boolean indicating whether the state change should proceed (i.e. true if it should
-         * proceed, false if not), effectively allowing one to create conditional transitions.
+         * callback returns a boolean indicating whether the transition should proceed (true if it should proceed, false
+         * if not), effectively allowing one to create conditional transitions.
          * </p>
          * <p>
-         * The callback should return quickly, lest the rest of the state change procedure will be delayed.
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
          * <p>
          * Only one before callback can be registered; multiple calls to any version of the {@code before} method will
@@ -148,11 +148,11 @@ public final class Transition {
 
         /**
          * <p>
-         * Register a callback to be run after this transition executes. The associated state change context (i.e.
+         * Register a callback to be run after this transition executes. The associated transition context (i.e.
          * {@link Event Event} object) is ignored.
          * </p>
          * <p>
-         * The callback should return quickly, lest the rest of the state change procedure will be delayed.
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
          * <p>
          * Only one after callback can be registered; multiple calls to any version of the {@code after} method will
@@ -174,7 +174,7 @@ public final class Transition {
          * Register a callback accepting an {@link Event Event} object to be run after this transition executes.
          * </p>
          * <p>
-         * The callback should return quickly, lest the rest of the state change procedure will be delayed.
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
          * <p>
          * Only one after callback can be registered; multiple calls to any version of the {@code after} method will
@@ -266,7 +266,7 @@ public final class Transition {
 
     /**
      * @return a {@linkplain List list} of the source {@linkplain State states} for this transition (i.e. those states
-     * this transition can transition from. The returned list always contains at least one element.
+     * this transition can transition from). The returned list always contains at least one element.
      */
     public List<State> getSrcs() {
         // Make a defensive copy.
