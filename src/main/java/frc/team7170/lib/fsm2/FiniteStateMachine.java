@@ -17,8 +17,8 @@ public final class FiniteStateMachine {
     static abstract class Builder {
 
         boolean ignoreMistrigger;
-        private Function<Event, Boolean> beforeStateChange;
-        private Consumer<Event> afterStateChange;
+        private Function<Event, Boolean> beforeAll;
+        private Consumer<Event> afterAll;
         final Map<String, State> stateMap;
         private final List<Transition> transitions = new ArrayList<>();
 
@@ -30,39 +30,39 @@ public final class FiniteStateMachine {
             ignoreMistrigger = true;
         }
 
-        public void beforeStateChange(Runnable callback) {
+        public void beforeAll(Runnable callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
-            beforeStateChange(event -> {
+            beforeAll(event -> {
                 callback.run();
                 return true;
             });
         }
 
-        public void beforeStateChange(Consumer<Event> callback) {
+        public void beforeAll(Consumer<Event> callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
-            beforeStateChange(event -> {
+            beforeAll(event -> {
                 callback.accept(event);
                 return true;
             });
         }
 
-        public void beforeStateChange(Function<Event, Boolean> callback) {
-            if (beforeStateChange != null) {
-                throw new IllegalStateException("cannot register more than one beforeStateChange callback");
+        public void beforeAll(Function<Event, Boolean> callback) {
+            if (beforeAll != null) {
+                throw new IllegalStateException("cannot register more than one beforeAll callback");
             }
-            beforeStateChange = Objects.requireNonNull(callback, "callback must be non-null");
+            beforeAll = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
-        public void afterStateChange(Runnable callback) {
+        public void afterAll(Runnable callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
-            afterStateChange(event -> callback.run());
+            afterAll(event -> callback.run());
         }
 
-        public void afterStateChange(Consumer<Event> callback) {
-            if (afterStateChange != null) {
-                throw new IllegalStateException("cannot register more than one afterStateChange callback");
+        public void afterAll(Consumer<Event> callback) {
+            if (afterAll != null) {
+                throw new IllegalStateException("cannot register more than one afterAll callback");
             }
-            afterStateChange = Objects.requireNonNull(callback, "callback must be non-null");
+            afterAll = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
         void addTransition(Transition transition) {
@@ -266,8 +266,8 @@ public final class FiniteStateMachine {
     }
 
     private final boolean ignoreMistrigger;
-    private final Function<Event, Boolean> beforeStateChange;
-    private final Consumer<Event> afterStateChange;
+    private final Function<Event, Boolean> beforeAll;
+    private final Consumer<Event> afterAll;
     private final Map<String, State> stateMap;
     private final List<Transition> transitions = new ArrayList<>();
 
@@ -275,8 +275,8 @@ public final class FiniteStateMachine {
 
     private FiniteStateMachine(Builder builder, State initial) {
         ignoreMistrigger = builder.ignoreMistrigger;
-        beforeStateChange = builder.beforeStateChange;
-        afterStateChange = builder.afterStateChange;
+        beforeAll = builder.beforeAll;
+        afterAll = builder.afterAll;
         stateMap = builder.stateMap;
         currState = initial;
     }
@@ -305,6 +305,7 @@ public final class FiniteStateMachine {
         forceTo(state, Map.of());
     }
 
+    // TODO: make sure state is not current state
     public void forceTo(State state, Map<String, Object> args) {
         if (!state.isAccessible()) {
             throw new IllegalArgumentException("cannot enter inaccessible state");
@@ -322,11 +323,11 @@ public final class FiniteStateMachine {
         );
 
         // Callbacks.
-        beforeStateChange(event);  // Cannot abort even if this returns false.
+        beforeAll(event);  // Cannot abort even if this returns false.
         currState.onExit(event);
         currState = state;
         state.onEnter(event);
-        afterStateChange(event);
+        afterAll(event);
     }
 
     public boolean trigger(String trgr) {
@@ -372,7 +373,7 @@ public final class FiniteStateMachine {
         Event event = new Event(this, currState, dst, transition, trgr, args);
 
         // Callbacks.
-        if (!beforeStateChange(event)) {
+        if (!beforeAll(event)) {
             return false;  // Abort.
         }
         if (!transition.before(event)) {
@@ -384,17 +385,17 @@ public final class FiniteStateMachine {
             dst.onEnter(event);
         }
         transition.after(event);
-        afterStateChange(event);
+        afterAll(event);
         return true;
     }
 
-    private boolean beforeStateChange(Event event) {
-        return beforeStateChange == null || beforeStateChange.apply(event);
+    private boolean beforeAll(Event event) {
+        return beforeAll == null || beforeAll.apply(event);
     }
 
-    private void afterStateChange(Event event) {
-        if (afterStateChange != null) {
-            afterStateChange.accept(event);
+    private void afterAll(Event event) {
+        if (afterAll != null) {
+            afterAll.accept(event);
         }
     }
 
