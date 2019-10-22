@@ -83,13 +83,10 @@ public final class FiniteStateMachine {
         }
 
         public void ignoreMistrigger(String... states) {
-            // Do not bother doing anything if we are ignoring mistriggers across the whole FSM.
-            if (!ignoreMistrigger) {
-                for (String state : Objects.requireNonNull(states, "states must be non-null")) {
-                    // This null check is redundant, but makes the error message more descriptive.
-                    str2State(Objects.requireNonNull(state, "cannot ignore mistriggers on null state"))
-                            .ignoreMistrigger = true;
-                }
+            for (String state : Objects.requireNonNull(states, "states must be non-null")) {
+                // This null check is redundant, but makes the error message more descriptive.
+                str2State(Objects.requireNonNull(state, "cannot ignore mistriggers on null state"))
+                        .ignoreMistrigger = true;
             }
         }
 
