@@ -5,7 +5,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-// TODO: make sure the user cannot try to pass more than one before/after callback, etc.
 // TODO: make capital after param tag consistent
 // TODO: comment in FSM class where Transition does null checks for us.
 public final class Transition {
@@ -155,7 +154,8 @@ public final class Transition {
     }
 
     void after(Event event) {
-        // TODO: error: NPE
-        after.accept(event);
+        if (after != null) {
+            after.accept(event);
+        }
     }
 }
