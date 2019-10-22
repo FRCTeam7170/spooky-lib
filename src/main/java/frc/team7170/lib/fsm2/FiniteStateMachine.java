@@ -76,7 +76,7 @@ public final class FiniteStateMachine {
 
     public static final class BuilderFromStrings extends Builder {
 
-        public BuilderFromStrings(String... states) {
+        BuilderFromStrings(String... states) {
             super(BuilderFromStrings.strs2Map(
                     Objects.requireNonNull(states, "state machine must have at least one state")
             ));
@@ -210,7 +210,7 @@ public final class FiniteStateMachine {
 
     public static final class BuilderFromEnum<T extends Enum<T> & State> extends Builder {
 
-        public BuilderFromEnum(Class<T> stateEnum) {
+        BuilderFromEnum(Class<T> stateEnum) {
             super(Stream.of(stateEnum.getEnumConstants())
                     .collect(Collectors.<State, String, State>toUnmodifiableMap(FiniteStateMachine::fullName, s -> s)));
             if (stateEnum.getEnumConstants().length == 0) {
