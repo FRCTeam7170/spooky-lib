@@ -6,7 +6,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-// TODO: add callbacks as suplliers of boolean / runnable
 // TODO: getter for ignoreMistrigger
 // TODO: thread safety
 // TODO: logging
@@ -30,7 +29,16 @@ public final class FiniteStateMachine {
             ignoreMistrigger = true;
         }
 
+        public void beforeStateChange(Runnable callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            beforeStateChange(event -> {
+                callback.run();
+                return true;
+            });
+        }
+
         public void beforeStateChange(Consumer<Event> callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
             beforeStateChange(event -> {
                 callback.accept(event);
                 return true;
@@ -38,11 +46,16 @@ public final class FiniteStateMachine {
         }
 
         public void beforeStateChange(Function<Event, Boolean> callback) {
-            beforeStateChange = callback;
+            beforeStateChange = Objects.requireNonNull(callback, "callback must be non-null");
+        }
+
+        public void afterStateChange(Runnable callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            afterStateChange(event -> callback.run());
         }
 
         public void afterStateChange(Consumer<Event> callback) {
-            afterStateChange = callback;
+            afterStateChange = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
         void addTransition(Transition transition) {
@@ -73,10 +86,20 @@ public final class FiniteStateMachine {
             }
         }
 
+        public void onEnter(String state, Runnable callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            onEnter(state, event -> callback.run());
+        }
+
         public void onEnter(String state, Consumer<Event> callback) {
             // The first null check is redundant, but makes the error message more descriptive.
             str2State(Objects.requireNonNull(state, "cannot attach callback to null state")).onEnter =
                     Objects.requireNonNull(callback, "callback must be non-null");
+        }
+
+        public void onExit(String state, Runnable callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            onExit(state, event -> callback.run());
         }
 
         public void onExit(String state, Consumer<Event> callback) {
@@ -85,6 +108,7 @@ public final class FiniteStateMachine {
                     Objects.requireNonNull(callback, "callback must be non-null");
         }
 
+        // TODO: rename this to avoid confusion?
         private BaseState str2State(String state) {
             return (BaseState) FiniteStateMachine.str2State(stateMap, state);
         }

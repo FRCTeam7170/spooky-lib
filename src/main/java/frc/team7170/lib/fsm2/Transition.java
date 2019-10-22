@@ -44,8 +44,16 @@ public final class Transition {
             }
         }
 
+        public void before(Runnable callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            before(event -> {
+                callback.run();
+                return true;
+            });
+        }
+
         public void before(Consumer<Event> callback) {
-            Objects.requireNonNull(callback, "cannot use null before callback");
+            Objects.requireNonNull(callback, "callback must be non-null");
             before(event -> {
                 callback.accept(event);
                 return true;
@@ -53,11 +61,16 @@ public final class Transition {
         }
 
         public void before(Function<Event, Boolean> callback) {
-            before = Objects.requireNonNull(callback, "cannot use null before callback");
+            before = Objects.requireNonNull(callback, "callback must be non-null");
+        }
+
+        public void after(Runnable callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            after(event -> callback.run());
         }
 
         public void after(Consumer<Event> callback) {
-            after = Objects.requireNonNull(callback, "cannot use null after callback");
+            after = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
         public T build() {
