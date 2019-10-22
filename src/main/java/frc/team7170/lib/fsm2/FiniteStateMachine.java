@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 // TODO: getter for ignoreMistrigger
 // TODO: thread safety
 // TODO: logging
+// TODO: document transition resolution
 public final class FiniteStateMachine {
 
     public static final String SUB_STATE_SEP = "/";
@@ -46,6 +47,9 @@ public final class FiniteStateMachine {
         }
 
         public void beforeStateChange(Function<Event, Boolean> callback) {
+            if (beforeStateChange != null) {
+                throw new IllegalStateException("cannot register more than one beforeStateChange callback");
+            }
             beforeStateChange = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
@@ -55,6 +59,9 @@ public final class FiniteStateMachine {
         }
 
         public void afterStateChange(Consumer<Event> callback) {
+            if (afterStateChange != null) {
+                throw new IllegalStateException("cannot register more than one afterStateChange callback");
+            }
             afterStateChange = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
@@ -92,9 +99,12 @@ public final class FiniteStateMachine {
         }
 
         public void onEnter(String state, Consumer<Event> callback) {
-            // The first null check is redundant, but makes the error message more descriptive.
-            str2State(Objects.requireNonNull(state, "cannot attach callback to null state")).onEnter =
-                    Objects.requireNonNull(callback, "callback must be non-null");
+            // This null check is redundant, but makes the error message more descriptive.
+            BaseState s = str2State(Objects.requireNonNull(state, "cannot attach callback to null state"));
+            if (s.onEnter != null) {
+                throw new IllegalStateException("cannot register more than one onEnter callback per state");
+            }
+            s.onEnter = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
         public void onExit(String state, Runnable callback) {
@@ -103,9 +113,12 @@ public final class FiniteStateMachine {
         }
 
         public void onExit(String state, Consumer<Event> callback) {
-            // The first null check is redundant, but makes the error message more descriptive.
-            str2State(Objects.requireNonNull(state, "cannot attach callback to null state")).onExit =
-                    Objects.requireNonNull(callback, "callback must be non-null");
+            // This null check is redundant, but makes the error message more descriptive.
+            BaseState s = str2State(Objects.requireNonNull(state, "cannot attach callback to null state"));
+            if (s.onExit != null) {
+                throw new IllegalStateException("cannot register more than one onExit callback per state");
+            }
+            s.onExit = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
         // TODO: rename this to avoid confusion?

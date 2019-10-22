@@ -5,6 +5,9 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+// TODO: make sure the user cannot try to pass more than one before/after callback, etc.
+// TODO: make capital after param tag consistent
+// TODO: comment in FSM class where Transition does null checks for us.
 public final class Transition {
 
     public static final class Builder<T extends FiniteStateMachine.Builder> {
@@ -61,6 +64,9 @@ public final class Transition {
         }
 
         public void before(Function<Event, Boolean> callback) {
+            if (before != null) {
+                throw new IllegalStateException("cannot register more than one before callback");
+            }
             before = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
@@ -70,6 +76,9 @@ public final class Transition {
         }
 
         public void after(Consumer<Event> callback) {
+            if (after != null) {
+                throw new IllegalStateException("cannot register more than one after callback");
+            }
             after = Objects.requireNonNull(callback, "callback must be non-null");
         }
 
@@ -146,6 +155,7 @@ public final class Transition {
     }
 
     void after(Event event) {
+        // TODO: error: NPE
         after.accept(event);
     }
 }
