@@ -71,7 +71,7 @@ public final class Transition {
 
         /**
          * <p>
-         * Specify a callback to be run before this transition executes. The associated state change context (i.e.
+         * Register a callback to be run before this transition executes. The associated state change context (i.e.
          * {@link Event Event} object) is ignored.
          * </p>
          * <p>
@@ -97,7 +97,7 @@ public final class Transition {
 
         /**
          * <p>
-         * Specify a callback accepting an {@link Event Event} object to be run before this transition executes.
+         * Register a callback accepting an {@link Event Event} object to be run before this transition executes.
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the state change procedure will be delayed.
@@ -122,7 +122,7 @@ public final class Transition {
 
         /**
          * <p>
-         * Specify a callback accepting an {@link Event Event} object to be run before this transition executes. The
+         * Register a callback accepting an {@link Event Event} object to be run before this transition executes. The
          * callback returns a boolean indicating whether the state change should proceed (i.e. true if it should
          * proceed, false if not), effectively allowing one to create conditional transitions.
          * </p>
@@ -148,7 +148,7 @@ public final class Transition {
 
         /**
          * <p>
-         * Specify a callback to be run after this transition executes. The associated state change context (i.e.
+         * Register a callback to be run after this transition executes. The associated state change context (i.e.
          * {@link Event Event} object) is ignored.
          * </p>
          * <p>
@@ -171,7 +171,7 @@ public final class Transition {
 
         /**
          * <p>
-         * Specify a callback accepting an {@link Event Event} object to be run after this transition executes.
+         * Register a callback accepting an {@link Event Event} object to be run after this transition executes.
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the state change procedure will be delayed.
