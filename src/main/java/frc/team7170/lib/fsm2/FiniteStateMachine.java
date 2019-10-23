@@ -311,8 +311,14 @@ public final class FiniteStateMachine {
         forceTo(state, Map.of());
     }
 
-    // TODO: make sure state is not current state
     public void forceTo(State state, Map<String, Object> args) {
+        if (Objects.requireNonNull(state, "cannot force transition to null state") == currState) {
+            // no-op if the FSM is already in the given state.
+            return;
+        }
+        if (!stateMap.containsValue(state)) {
+            throw new IllegalArgumentException("state does not belong to this FSM");
+        }
         if (!state.isAccessible()) {
             throw new IllegalArgumentException("cannot enter inaccessible state");
         }
