@@ -10,12 +10,17 @@ import java.util.stream.Stream;
 // TODO: thread safety
 // TODO: logging
 // TODO: document transition resolution
+// TODO: call enter/exit callbacks for parent states too
+// TODO: add static methods to State interface for comparing states (equality, super, sub, etc.)
+// TODO: if a trigger occurs while a state change is in progress, queue it
+// TODO: make FSM class generic so Enum states can be compile time type safe?
 public final class FiniteStateMachine {
 
     public static final String SUB_STATE_SEP = "/";
 
     static abstract class Builder {
 
+        boolean built = false;
         boolean ignoreMistrigger;
         private Function<Event, Boolean> beforeAll;
         private Consumer<Event> afterAll;
@@ -70,6 +75,10 @@ public final class FiniteStateMachine {
         }
 
         FiniteStateMachine build(State initial) {
+            if (built) {
+                throw new IllegalStateException("build already invoked");
+            }
+            built = true;
             return new FiniteStateMachine(this, initial);
         }
     }
