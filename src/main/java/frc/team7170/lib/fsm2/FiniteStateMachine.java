@@ -336,9 +336,9 @@ public final class FiniteStateMachine {
 
         // Callbacks.
         beforeAll(event);  // Cannot abort even if this returns false.
-        currState.onExit(event);
+        chainOnExitCallbacks(currState, event);
         currState = state;
-        state.onEnter(event);
+        chainOnEnterCallbacks(state, event);
         afterAll(event);
     }
 
@@ -392,9 +392,9 @@ public final class FiniteStateMachine {
             return false;  // Abort.
         }
         if (!transition.isInternal()) {
-            currState.onExit(event);
+            chainOnExitCallbacks(currState, event);
             currState = dst;
-            dst.onEnter(event);
+            chainOnEnterCallbacks(dst, event);
         }
         transition.after(event);
         afterAll(event);
@@ -421,6 +421,22 @@ public final class FiniteStateMachine {
             state = state.getParent();
         }
         return sb.toString();
+    }
+
+    private static void chainOnExitCallbacks(State state, Event event) {
+        if (state != null) {
+            // Call the ancestors' callbacks first, as per specification.
+            chainOnExitCallbacks(state.getParent(), event);
+            state.onExit(event);
+        }
+    }
+
+    private static void chainOnEnterCallbacks(State state, Event event) {
+        if (state != null) {
+            // Call the ancestors' callbacks first, as per specification.
+            chainOnEnterCallbacks(state.getParent(), event);
+            state.onEnter(event);
+        }
     }
 
     private static boolean inLineage(State q, State l) {
