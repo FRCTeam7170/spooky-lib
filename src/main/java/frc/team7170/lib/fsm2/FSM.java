@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  *
  * @author Robert Russell
  */
-public final class FiniteStateMachine {
+public final class FSM {
 
     /**
      * The string used to separate state names from their parents' names. For example, "A/B" refers to the state named
@@ -35,7 +35,7 @@ public final class FiniteStateMachine {
     public static final String SUB_STATE_SEP = "/";
 
     /**
-     * A builder for {@code FiniteStateMachine}s.
+     * A builder for {@code FSM}s.
      *
      * @apiNote This class is not strictly abstract, but it should not and cannot be instantiated directly.
      *
@@ -211,17 +211,17 @@ public final class FiniteStateMachine {
             transitions.add(transition);
         }
 
-        FiniteStateMachine build(State initial) {
+        FSM build(State initial) {
             if (built) {
                 throw new IllegalStateException("build already invoked");
             }
             built = true;
-            return new FiniteStateMachine(this, initial);
+            return new FSM(this, initial);
         }
     }
 
     /**
-     * A builder for {@code FiniteStateMachine}s that uses raw strings to represent states.
+     * A builder for {@code FSM}s that uses raw strings to represent states.
      *
      * @author Robert Russell
      */
@@ -231,9 +231,9 @@ public final class FiniteStateMachine {
          * @apiNote This constructor is not public so the user has to use the
          * {@linkplain #fromStrings(String...) static factory method} instead, thereby encouraging the use of more
          * compact syntax (i.e.
-         * <pre>{@code FiniteStateMachine.fromStrings(...)...}</pre>
+         * <pre>{@code FSM.fromStrings(...)...}</pre>
          * instead of
-         * <pre>{@code new FiniteStateMachine.BuilderFromStrings(...)...}</pre>
+         * <pre>{@code new FSM.BuilderFromStrings(...)...}</pre>
          * ).
          *
          * @param states an array of all the states for the FSM being built in the form of strings.
@@ -370,7 +370,7 @@ public final class FiniteStateMachine {
 
         // TODO: rename this to avoid confusion?
         private BaseState str2State(String state) {
-            return (BaseState) FiniteStateMachine.str2State(stateMap, state);
+            return (BaseState) FSM.str2State(stateMap, state);
         }
 
         /**
@@ -508,7 +508,7 @@ public final class FiniteStateMachine {
 
         /**
          * <p>
-         * Build the {@code FiniteStateMachine} and initialize it in the given state.
+         * Build the {@code FSM} and initialize it in the given state.
          * </p>
          * <p>
          * Note that the {@code onEnter} callback is <em>not</em> invoked on the initial state as the FSM does not enter
@@ -522,12 +522,12 @@ public final class FiniteStateMachine {
          * used in the FSM.
          *
          * @param initialState the initial state for the FSM.
-         * @return the newly-constructed {@code FiniteStateMachine}.
+         * @return the newly-constructed {@code FSM}.
          * @throws NullPointerException if the given initial state is {@code null}.
          * @throws IllegalArgumentException if the given initial state does not belong to the FSM being built.
          * @throws IllegalStateException if {@code build} has already been called.
          */
-        public FiniteStateMachine build(String initialState) {
+        public FSM build(String initialState) {
             return build(str2State(Objects.requireNonNull(initialState, "initialState must be non-null")));
         }
 
@@ -552,7 +552,7 @@ public final class FiniteStateMachine {
                         Objects.requireNonNull(state, "state must be null-null")
                 )) {
                     if (!stateMap.containsKey(seg)) {
-                        last = new BaseState(seg.substring(seg.lastIndexOf(FiniteStateMachine.SUB_STATE_SEP)+1), last);
+                        last = new BaseState(seg.substring(seg.lastIndexOf(FSM.SUB_STATE_SEP)+1), last);
                         stateMap.put(seg, last);
                     }
                 }
@@ -570,10 +570,10 @@ public final class FiniteStateMachine {
 
         private static List<String> getLineage(String state) {
             List<String> list = new ArrayList<>();
-            int idx = state.indexOf(FiniteStateMachine.SUB_STATE_SEP);
+            int idx = state.indexOf(FSM.SUB_STATE_SEP);
             while (idx != -1) {
                 list.add(state.substring(0, idx));
-                idx = state.indexOf(FiniteStateMachine.SUB_STATE_SEP, idx+1);
+                idx = state.indexOf(FSM.SUB_STATE_SEP, idx+1);
             }
             list.add(state);
             return list;
@@ -581,7 +581,7 @@ public final class FiniteStateMachine {
     }
 
     /**
-     * A builder for {@code FiniteStateMachine}s that uses the constants of an enum implementor of {@link State State}
+     * A builder for {@code FSM}s that uses the constants of an enum implementor of {@link State State}
      * to represent states.
      *
      * @author Robert Russell
@@ -592,16 +592,16 @@ public final class FiniteStateMachine {
          * @apiNote This constructor is not public so the user has to use the
          * {@linkplain #fromEnum(Class) static factory method} instead, thereby encouraging the use of more
          * compact syntax (i.e.
-         * <pre>{@code FiniteStateMachine.fromEnum(...)...}</pre>
+         * <pre>{@code FSM.fromEnum(...)...}</pre>
          * instead of
-         * <pre>{@code new FiniteStateMachine.BuilderFromEnum(...)...}</pre>
+         * <pre>{@code new FSM.BuilderFromEnum(...)...}</pre>
          * ).
          *
          * @param stateEnum the class of the enum containing all the states for the FSM being built.
          */
         BuilderFromEnum(Class<T> stateEnum) {
             super(Stream.of(stateEnum.getEnumConstants())
-                    .collect(Collectors.<State, String, State>toUnmodifiableMap(FiniteStateMachine::fullName, s -> s)));
+                    .collect(Collectors.<State, String, State>toUnmodifiableMap(FSM::fullName, s -> s)));
             if (stateEnum.getEnumConstants().length == 0) {
                 throw new IllegalArgumentException("state machine must have at least one state");
             }
@@ -749,7 +749,7 @@ public final class FiniteStateMachine {
         // TODO: rename initialState to initial for consistency
         /**
          * <p>
-         * Build the {@code FiniteStateMachine} and initialize it in the given state.
+         * Build the {@code FSM} and initialize it in the given state.
          * </p>
          * <p>
          * Note that the {@link State#onEnter(Event) onEnter} callback is <em>not</em> invoked on the initial state as
@@ -763,18 +763,18 @@ public final class FiniteStateMachine {
          * used in the FSM.
          *
          * @param initialState the initial state for the FSM.
-         * @return the newly-constructed {@code FiniteStateMachine}.
+         * @return the newly-constructed {@code FSM}.
          * @throws NullPointerException if the given initial state is {@code null}.
          * @throws IllegalStateException if {@code build} has already been called.
          */
-        public FiniteStateMachine build(State initialState) {
+        public FSM build(State initialState) {
             return super.build(Objects.requireNonNull(initialState, "initialState must be non-null"));
         }
     }
 
     /**
      * <p>
-     * Get a {@linkplain BuilderFromStrings builder} for a {@code FiniteStateMachine} in which the states are
+     * Get a {@linkplain BuilderFromStrings builder} for a {@code FSM} in which the states are
      * represented by strings.
      * </p>
      * <p>
@@ -795,7 +795,7 @@ public final class FiniteStateMachine {
     }
 
     /**
-     * Get a {@linkplain BuilderFromEnum builder} for a {@code FiniteStateMachine} in which the states are represented
+     * Get a {@linkplain BuilderFromEnum builder} for a {@code FSM} in which the states are represented
      * by constants in the given enum implementing the {@link State State} interface.
      *
      * @param stateEnum the enum class.
@@ -828,7 +828,7 @@ public final class FiniteStateMachine {
 
     private State currState;
 
-    private FiniteStateMachine(Builder builder, State initial) {
+    private FSM(Builder builder, State initial) {
         ignoreMistrigger = builder.ignoreMistrigger;
         beforeAll = builder.beforeAll;
         afterAll = builder.afterAll;
@@ -860,7 +860,7 @@ public final class FiniteStateMachine {
      * @throws IllegalArgumentException if the given state does not belong to this FSM.
      */
     public boolean in(String state) {
-        return in(FiniteStateMachine.str2State(stateMap, state));
+        return in(FSM.str2State(stateMap, state));
     }
 
     /**
@@ -936,7 +936,7 @@ public final class FiniteStateMachine {
      * @throws IllegalArgumentException if the given state is inaccessible.
      */
     public void forceTo(String state, Map<String, Object> args) {
-        forceTo(FiniteStateMachine.str2State(stateMap, state), args);
+        forceTo(FSM.str2State(stateMap, state), args);
     }
 
     /**
@@ -1099,7 +1099,7 @@ public final class FiniteStateMachine {
         sb.append(state.name());
         state = state.getParent();
         while (state != null) {
-            sb.append(FiniteStateMachine.SUB_STATE_SEP);
+            sb.append(FSM.SUB_STATE_SEP);
             sb.append(state.name());
             state = state.getParent();
         }

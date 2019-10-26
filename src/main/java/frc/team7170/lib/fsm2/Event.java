@@ -4,16 +4,16 @@ import java.util.Map;
 
 /**
  * {@code Event} represents the immutable context for a transition/state change in a
- * {@link FiniteStateMachine FiniteStateMachine}.
+ * {@link FSM FSM}.
  *
  * @author Robert Russell
  */
 public final class Event {
 
     /**
-     * The {@link FiniteStateMachine FiniteStatemachine} in which the transition/state change occurred.
+     * The {@link FSM FSM} in which the transition/state change occurred.
      */
-    public final FiniteStateMachine machine;
+    public final FSM machine;
 
     /**
      * The src (source) {@linkplain State state} (i.e. the state being transitioned from). The src and dst (destination)
@@ -29,19 +29,19 @@ public final class Event {
 
     /**
      * The {@linkplain Transition transition} that is occurring. If the state change was forced (i.e. via one of the
-     * {@code forceTo} methods on a {@link FiniteStateMachine FiniteStateMachine}), then this is {@code null}.
+     * {@code forceTo} methods on a {@link FSM FSM}), then this is {@code null}.
      */
     public final Transition transition;
 
     /**
      * The trigger that caused the state change. If the state change was forced (i.e. via one of the {@code forceTo}
-     * methods on a {@link FiniteStateMachine FiniteStateMachine}), then this is {@code null}.
+     * methods on a {@link FSM FSM}), then this is {@code null}.
      */
     public final String trigger;
 
     /**
      * The arguments passed to the call of {@code trigger} or {@code forceTo} (on a
-     * {@link FiniteStateMachine FiniteStateMachine}) that caused the state change.
+     * {@link FSM FSM}) that caused the state change.
      * This map is guaranteed to be non-null and, unless {@code trigger}/{@code forceTo} was invoked with an immutable
      * map, mutable.
      * Moreover, since the same {@code Event} object is passed to every callback in the callback chain for a state
@@ -49,7 +49,7 @@ public final class Event {
      */
     public final Map<String, Object> args;
 
-    Event(FiniteStateMachine machine,
+    Event(FSM machine,
           State src,
           State dst,
           Transition transition,

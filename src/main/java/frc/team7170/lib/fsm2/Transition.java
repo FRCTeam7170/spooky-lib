@@ -9,7 +9,7 @@ import java.util.function.Function;
 // TODO: comment in FSM class where Transition does null checks for us.
 /**
  * <p>
- * A transition for a {@link FiniteStateMachine FiniteStateMachine}.
+ * A transition for a {@link FSM FSM}.
  * </p>
  * <p>
  * Typically, the user should not have to interact with this class; it is mainly used internally. However,
@@ -26,13 +26,13 @@ public final class Transition {
      *
      * @apiNote This class is generic so that {@link Builder#build() build} can return the appropriate "parent builder".
      *
-     * @param <T> the type of {@linkplain FiniteStateMachine.Builder FSM builder} (either
-     * {@link FiniteStateMachine.BuilderFromStrings BuilderFromStrings} or
-     * {@link FiniteStateMachine.BuilderFromEnum BuilderFromEnum}).
+     * @param <T> the type of {@linkplain FSM.Builder FSM builder} (either
+     * {@link FSM.BuilderFromStrings BuilderFromStrings} or
+     * {@link FSM.BuilderFromEnum BuilderFromEnum}).
      *
      * @author Robert Russell
      */
-    public static final class Builder<T extends FiniteStateMachine.Builder> {
+    public static final class Builder<T extends FSM.Builder> {
 
         private final String trigger;
         private final List<? extends State> srcs;
@@ -195,7 +195,7 @@ public final class Transition {
 
         /**
          * Build the {@code Transition} object and add it to the parent
-         * {@linkplain FiniteStateMachine.Builder FSM builder}.
+         * {@linkplain FSM.Builder FSM builder}.
          *
          * @return the parent FSM builder.
          */
@@ -207,7 +207,7 @@ public final class Transition {
         /**
          * @return a new {@code Builder} for a normal (i.e. not internal or reflexive) transition.
          */
-        static <T extends FiniteStateMachine.Builder> Builder<T> normal(
+        static <T extends FSM.Builder> Builder<T> normal(
                 String trigger, List<? extends State> srcs, State dst, T parent
         ) {
             return new Builder<>(trigger, srcs, dst, parent, Type.NORMAL);
@@ -216,7 +216,7 @@ public final class Transition {
         /**
          * @return a new {@code Builder} for an internal transition.
          */
-        static <T extends FiniteStateMachine.Builder> Builder<T> internal(
+        static <T extends FSM.Builder> Builder<T> internal(
                 String trigger, List<? extends State> srcs, T parent
         ) {
             return new Builder<>(trigger, srcs, null, parent, Type.INTERNAL);
@@ -225,7 +225,7 @@ public final class Transition {
         /**
          * @return a new {@code Builder} for a reflexive transition.
          */
-        static <T extends FiniteStateMachine.Builder> Builder<T> reflexive(
+        static <T extends FSM.Builder> Builder<T> reflexive(
                 String trigger, List<? extends State> srcs, T parent
         ) {
             return new Builder<>(trigger, srcs, null, parent, Type.REFLEXIVE);

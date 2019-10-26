@@ -4,7 +4,7 @@ import java.util.function.Consumer;
 
 /**
  * A basic implementation of {@link State State} used internally for when a
- * {@link FiniteStateMachine FiniteStateMachine} is instantiated used strings to represent states.
+ * {@link FSM FSM} is instantiated used strings to represent states.
  *
  * @author Robert Russell
  */
