@@ -5,9 +5,9 @@ package frc.team7170.lib.fsm2;
 /**
  * A state for a {@link FSM FSM}.
  *
- * @apiNote This interface is provided to be implemented by enums to create an enum of all the states for a
- * {@code FSM}. Considering the restrictions on instantiation of {@code FSMs},
- * implementing this interface on anything other than an enum is pointless.
+ * @apiNote This interface is provided to be implemented by enums to create an enum of all the states for a {@code FSM}.
+ * Considering the restrictions on instantiation of {@code FSMs}, implementing this interface on anything other than an
+ * enum is pointless.
  *
  * @author Robert Russell
  */
@@ -19,13 +19,12 @@ public interface State {
      *
      * @apiNote This method is called {@code name} as opposed to {@code getName} so it is automatically satisfied by
      * enum implementors. Since the {@link Enum#name() name} method for enums is final and the sub state
-     * separator/delimiter ({@value FSM#SUB_STATE_SEP}) is not a valid identifier character in Java, this
-     * guarantees that users can not create enum-based states with invalid names (i.e. containing
-     * {@value FSM#SUB_STATE_SEP}). Moreover, since {@link FSM FSMs} can
-     * only be instantiated via raw strings or via an enum, this effectively guarantees users cannot make states with
-     * invalid names at all.
+     * separator/delimiter ({@value FSM#SUB_STATE_SEP}) is not a valid identifier character in Java, this guarantees
+     * that users can not create enum-based states with invalid names (i.e. containing {@value FSM#SUB_STATE_SEP}).
+     * Moreover, since {@link FSM FSMs} can only be instantiated with strings or an enum representing states, this
+     * effectively guarantees users cannot make states with invalid names at all.
      *
-     * @return The name of this state.
+     * @return the name of this state.
      */
     String name();
 
@@ -34,54 +33,50 @@ public interface State {
      *
      * @implSpec Dynamically changing the return value of this method will result in undefined behaviour.
      *
-     * @return The parent {@code State} of this state, or {@code null} if it has no parent.
+     * @return the parent {@code State} of this state, or {@code null} if it has no parent.
      */
     default State getParent() {
         return null;
     }
 
     /**
-     * Get whether or not this state is "accessible" (can be entered by a
-     * {@link FSM FSM}).
+     * Get whether or not this state is "accessible" (can be directly entered by a {@link FSM FSM}).
      *
      * @apiNote This property is mainly provided to allow one to create state hierarchies in which certain states may
-     * only be entered through their (distant) children (e.g. a state "A" might be inaccessible, but a
-     * {@code FSM} can still be considered in state "A" if it is in an accessible child/grandchild/etc.
-     * of "A"). Typically, this property might be leveraged to assure a {@code FSM} can only assume leaf
-     * states (i.e. states with no children).
+     * only be entered through their (distant) children (e.g. a state "A" might be inaccessible, but a {@code FSM} can
+     * still be considered in state "A" if it is in an accessible child/grandchild/etc. of "A"). Typically, this
+     * property might be leveraged to assure a {@code FSM} can only assume leaf states (i.e. states with no children).
      *
      * @implSpec Dynamically changing the return value of this method will result in undefined behaviour.
      *
-     * @return Whether or not this state is "accessible".
+     * @return whether or not this state is "accessible".
      */
     default boolean isAccessible() {
         return true;
     }
 
     /**
-     * Get whether or not to ignore invalid triggers while this state is the current state in a
-     * {@link FSM FSM}.
+     * Get whether or not to ignore invalid triggers while this state is the current state in a {@link FSM FSM}.
      *
      * @implSpec Dynamically changing the return value of this method will result in undefined behaviour.
      *
-     * @return Whether or not to ignore invalid triggers while this state is the current state in a
-     * {@code FSM}.
+     * @return whether or not to ignore invalid triggers while this state is the current state in a {@code FSM}.
      */
     default boolean getIgnoreMistrigger() {
         return false;
     }
 
     /**
-     * Callback that is executed whenever this state is entered.
+     * Callback that is executed after this state is entered.
      *
-     * @param event The state change context.
+     * @param event the state change context.
      */
     default void onEnter(Event event) {}
 
     /**
-     * Callback that is executed whenever this state is exited.
+     * Callback that is executed before this state is exited.
      *
-     * @param event The state change context.
+     * @param event the state change context.
      */
     default void onExit(Event event) {}
 }
