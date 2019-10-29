@@ -3,10 +3,24 @@ package frc.team7170.lib.fsm2;
 import java.util.*;
 import java.util.function.Supplier;
 
+/**
+ * An implementation of {@link StateMap StateMap} for states of type string.
+ *
+ * @param <T> the trigger type.
+ *
+ * @author Robert Russell
+ */
 class StringStateMap<T> implements StateMap<String, T> {
 
     private final Map<String, StateBundle<T>> bundleMap;
 
+    /**
+     * @param states an array of states.
+     * @param mapSupplier a supplier returning maps appropriate for the trigger type.
+     * @throws NullPointerException if any of the states in the given state array are {@code null}.
+     * @throws IllegalArgumentException if the given state array is empty.
+     * @throws IllegalArgumentException if the given state array contains duplicate elements.
+     */
     StringStateMap(String[] states, Supplier<Map<T, Transition<T>>> mapSupplier) {
         if (states.length == 0) {
             throw new IllegalArgumentException("state machines must have at least one state");
@@ -26,8 +40,9 @@ class StringStateMap<T> implements StateMap<String, T> {
                     last = (BaseState) sb.state;
                 }
             }
-            // getLineage always returns a list with at least one element (i.e. at least the leaf state); if that
-            // state is already accessible, then it must have been a duplicate.
+            // getLineage always returns a list with at least one element (i.e. at least the leaf state); if the last
+            // state in the list is already accessible, then it must have been a duplicate, which we prohibit to prevent
+            // user errors.
             //noinspection ConstantConditions
             if (last.accessible) {
                 throw new IllegalArgumentException(String.format("duplicate state '%s'", state));
@@ -57,6 +72,17 @@ class StringStateMap<T> implements StateMap<String, T> {
         return bundleMap.get(s);
     }
 
+    /**
+     * <p>
+     * Get a list of strings representing the lineage of the given state sorted in "parent before child" order.
+     * </p>
+     * <p>
+     * For example, calling this method with {@code "a/b/c"} would return {@code {"a", "a/b", "a/b/c"}}.
+     * </p>
+     *
+     * @param state the state to get the lineage of.
+     * @return a list of strings representing the lineage of the given state sorted in "parent before child" order.
+     */
     private static List<String> getLineage(String state) {
         List<String> list = new ArrayList<>();
         int idx = state.indexOf(FSM.SUB_STATE_SEP);
