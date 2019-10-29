@@ -2,6 +2,8 @@ package frc.team7170.lib.fsm2;
 
 // TODO: rename ignoreMistrigger to ignoreInvalidTrigger
 
+import java.util.Objects;
+
 /**
  * A state for a {@link FSM FSM}.
  *
@@ -79,4 +81,45 @@ public interface State {
      * @param event the state change context.
      */
     default void onExit(Event event) {}
+
+    /**
+     * Get the full name of the the given state (i.e. the name containing all the ancestor names delimited by
+     * {@value FSM#SUB_STATE_SEP}).
+     *
+     * @param state the state to get the full name of.
+     * @return the full name of the the given state (i.e. the name containing all the ancestor names delimited by
+     * {@value FSM#SUB_STATE_SEP}).
+     * @throws NullPointerException if the given state is {@code null}.
+     */
+    static String fullName(State state) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(Objects.requireNonNull(state, "state must be non-null").name());
+        state = state.getParent();
+        while (state != null) {
+            sb.append(FSM.SUB_STATE_SEP);
+            sb.append(state.name());
+            state = state.getParent();
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Get whether or not the given state "parent" is in the lineage/ancestry of the given state "child". A state is
+     * considered in its own lineage.
+     *
+     * @param child the (potential) child state.
+     * @param parent the (potential) parent state.
+     * @return whether or not the given state "parent" is in the lineage/ancestry of the given state "child".
+     * @throws NullPointerException if either of the given states are {@code null}.
+     */
+    static boolean inLineage(State child, State parent) {
+        Objects.requireNonNull(child, "child state must be non-null");
+        Objects.requireNonNull(parent, "parent state must be non-null");
+        for (; child != null; child = child.getParent()) {
+            if (child == parent) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -55,7 +55,7 @@ class StringStateMap<T> implements StateMap<String, T> {
 
     @Override
     public String state2s(State state) {
-        return FSM.fullName(state);
+        return State.fullName(state);
     }
 
     @Override

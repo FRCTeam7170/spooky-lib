@@ -804,7 +804,7 @@ public final class FSM<S, T> {
      * @throws IllegalArgumentException if the given state does not belong to this {@code FSM}.
      */
     public boolean in(S state) {
-        return inLineage(
+        return State.inLineage(
                 currSB.state,
                 stateMap.s2state(Objects.requireNonNull(state, "state must be non-null"))
         );
@@ -910,7 +910,7 @@ public final class FSM<S, T> {
         if (transition == null) {
             if (!ignoreMistrigger && !currSB.state.getIgnoreMistrigger()) {
                 throw new IllegalStateException(
-                        String.format("cannot use trigger '%s' in state '%s'", trgr, FSM.fullName(currSB.state))
+                        String.format("cannot use trigger '%s' in state '%s'", trgr, State.fullName(currSB.state))
                 );
             }
             return false;
@@ -954,18 +954,6 @@ public final class FSM<S, T> {
         }
     }
 
-    public static String fullName(State state) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(state.name());
-        state = state.getParent();
-        while (state != null) {
-            sb.append(FSM.SUB_STATE_SEP);
-            sb.append(state.name());
-            state = state.getParent();
-        }
-        return sb.toString();
-    }
-
     private static void chainOnExitCallbacks(State state, Event event) {
         if (state != null) {
             // Call the ancestors' callbacks first, as per specification.
@@ -982,12 +970,4 @@ public final class FSM<S, T> {
         }
     }
 
-    private static boolean inLineage(State q, State l) {
-        for (; q != null; q = q.getParent()) {
-            if (q == l) {
-                return true;
-            }
-        }
-        return false;
-    }
 }
