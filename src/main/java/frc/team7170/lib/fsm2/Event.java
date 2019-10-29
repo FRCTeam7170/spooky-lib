@@ -33,12 +33,18 @@ public final class Event<S, T> {
     public final T trigger;
 
     /**
-     * The arguments passed to the call of {@code trigger} or {@code forceTo} (on a
-     * {@link FSM FSM}) that caused the state change.
+     * <p>
+     * The arguments passed to the call of {@code trigger} or {@code forceTo} (on a {@link FSM FSM}) that caused the
+     * state change.
+     * </p>
+     * <p>
      * This map is guaranteed to be non-null and, unless {@code trigger}/{@code forceTo} was invoked with an immutable
      * map, mutable.
-     * Moreover, since the same {@code Event} object is passed to every callback in the callback chain for a state
-     * change, changes to this map in one callback will be visible to other callbacks.
+     * </p>
+     * <p>
+     * Since the same {@code Event} object is passed to every callback in the callback chain for a state change, changes
+     * to this map in one callback will be visible to other callbacks.
+     * </p>
      */
     public final Map<String, Object> args;
 
