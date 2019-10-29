@@ -3,17 +3,16 @@ package frc.team7170.lib.fsm2;
 import java.util.Map;
 
 /**
- * {@code Event} represents the immutable context for a transition/state change in a
- * {@link FSM FSM}.
+ * {@code Event} represents the immutable context for a transition/state change in a {@link FSM FSM}.
  *
  * @author Robert Russell
  */
-public final class Event {
+public final class Event<S, T> {
 
     /**
      * The {@link FSM FSM} in which the transition/state change occurred.
      */
-    public final FSM machine;
+    public final FSM<S, T> machine;
 
     /**
      * The src (source) {@linkplain State state} (i.e. the state being transitioned from). The src and dst (destination)
@@ -28,16 +27,10 @@ public final class Event {
     public final State dst;
 
     /**
-     * The {@linkplain Transition transition} that is occurring. If the state change was forced (i.e. via one of the
-     * {@code forceTo} methods on a {@link FSM FSM}), then this is {@code null}.
-     */
-    public final Transition transition;
-
-    /**
      * The trigger that caused the state change. If the state change was forced (i.e. via one of the {@code forceTo}
      * methods on a {@link FSM FSM}), then this is {@code null}.
      */
-    public final String trigger;
+    public final T trigger;
 
     /**
      * The arguments passed to the call of {@code trigger} or {@code forceTo} (on a
@@ -49,16 +42,14 @@ public final class Event {
      */
     public final Map<String, Object> args;
 
-    Event(FSM machine,
+    Event(FSM<S, T> machine,
           State src,
           State dst,
-          Transition transition,
-          String trigger,
+          T trigger,
           Map<String, Object> args) {
         this.machine = machine;
         this.src = src;
         this.dst = dst;
-        this.transition = transition;
         this.trigger = trigger;
         this.args = args;
     }
