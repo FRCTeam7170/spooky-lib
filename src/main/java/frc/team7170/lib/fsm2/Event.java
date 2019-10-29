@@ -2,6 +2,8 @@ package frc.team7170.lib.fsm2;
 
 import java.util.Map;
 
+// TODO: add fields for S-typed version of src and dst?
+
 /**
  * {@code Event} represents the immutable context for a transition/state change in a {@link FSM FSM}.
  *

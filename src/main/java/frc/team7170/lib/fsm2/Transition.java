@@ -6,12 +6,25 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 // TODO: comment in FSM class where Transition does null checks for us.
-// TODO: type parameter documentation all messed up
 
+/**
+ * {@code Transition} is used internally to represent a state transition on a {@link FSM FSM}.
+ *
+ * @param <T> the trigger type.
+ *
+ * @author Robert Russell
+ */
 final class Transition<T> {
 
     /**
      * A builder for transitions in a {@link FSM FSM}.
+     *
+     * @apiNote {@code Builder} is genericized in terms of the {@link FSM.Builder FSM.Builder} type so that
+     * {@link #build() build} knows what type to return.
+     *
+     * @param <S> the state type
+     * @param <T> the trigger type.
+     * @param <I> the type of the {@link FSM.Builder FSM.Builder}.
      *
      * @author Robert Russell
      */
@@ -26,6 +39,7 @@ final class Transition<T> {
         private Consumer<Event> after;
 
         private Builder(T trigger, List<StateBundle<T>> srcs, StateBundle<T> dst, I parent, boolean internal) {
+            // All parameters should have already been validated.
             this.trigger = trigger;
             this.srcs = srcs;
             this.dst = dst;
@@ -48,6 +62,7 @@ final class Transition<T> {
          * </p>
          *
          * @param callback a callback to be run before this transition executes.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code before} has been called previously.
          */
@@ -72,7 +87,8 @@ final class Transition<T> {
          * multiple before callbacks.
          * </p>
          *
-         * @param callback A callback to be run before this transition executes.
+         * @param callback a callback to be run before this transition executes.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code before} has been called previously.
          */
@@ -99,7 +115,8 @@ final class Transition<T> {
          * multiple before callbacks.
          * </p>
          *
-         * @param callback A callback to be run before this transition executes.
+         * @param callback a callback to be run before this transition executes.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code before} has been called previously.
          */
@@ -126,6 +143,7 @@ final class Transition<T> {
          * </p>
          *
          * @param callback a callback to be run after this transition executes.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code after} has been called previously.
          */
@@ -148,6 +166,7 @@ final class Transition<T> {
          * </p>
          *
          * @param callback a callback to be run after this transition executes.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code after} has been called previously.
          */
@@ -160,10 +179,9 @@ final class Transition<T> {
         }
 
         /**
-         * Build the {@code Transition} object and add it to the parent
-         * {@linkplain FSM.Builder FSM builder}.
+         * Build the {@code Transition} object and register it with all the source states.
          *
-         * @return the parent FSM builder.
+         * @return the parent {@linkplain FSM.Builder FSM builder}.
          */
         public I build() {
             Transition<T> transition = new Transition<>(dst, before, after, internal);
@@ -174,7 +192,7 @@ final class Transition<T> {
         }
 
         /**
-         * @return a new {@code TransitionBuilder} for a normal (i.e. not internal or reflexive) transition.
+         * @return a new {@code Transition.Builder} for a normal (i.e. not internal or reflexive) transition.
          */
         static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> normal(
                 T trigger, List<StateBundle<T>> srcs, StateBundle<T> dst, I parent
@@ -183,7 +201,7 @@ final class Transition<T> {
         }
 
         /**
-         * @return a new {@code TransitionBuilder} for an internal transition.
+         * @return a new {@code Transition.Builder} for an internal transition.
          */
         static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> internal(
                 T trigger, List<StateBundle<T>> srcs, I parent
@@ -192,7 +210,7 @@ final class Transition<T> {
         }
 
         /**
-         * @return a new {@code TransitionBuilder} for a reflexive transition.
+         * @return a new {@code Transition.Builder} for a reflexive transition.
          */
         static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> reflexive(
                 T trigger, List<StateBundle<T>> srcs, I parent
@@ -213,6 +231,13 @@ final class Transition<T> {
         this.internal = internal;
     }
 
+    /**
+     * Resolve the destination state for this transition given the source state and assuming the given source state is a
+     * valid source state for this transition.
+     *
+     * @param src the source state (bundle).
+     * @return the resolved destination state.
+     */
     StateBundle<T> resolveDst(StateBundle<T> src) {
         return dst != null ? dst : src;
     }
