@@ -64,7 +64,7 @@ public interface State {
      *
      * @return whether or not to ignore invalid triggers while this state is the current state in a {@code FSM}.
      */
-    default boolean getIgnoreMistrigger() {
+    default boolean getIgnoreInvalidTriggers() {
         return false;
     }
 

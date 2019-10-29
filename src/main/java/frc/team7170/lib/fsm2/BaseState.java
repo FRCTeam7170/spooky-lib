@@ -13,7 +13,7 @@ class BaseState implements State {
     private final String name;
     private State parent;
     boolean accessible = false;
-    boolean ignoreMistrigger = false;
+    boolean ignoreInvalidTriggers = false;
     Consumer<Event> onEnter = null;
     Consumer<Event> onExit = null;
 
@@ -38,8 +38,8 @@ class BaseState implements State {
     }
 
     @Override
-    public boolean getIgnoreMistrigger() {
-        return ignoreMistrigger;
+    public boolean getIgnoreInvalidTriggers() {
+        return ignoreInvalidTriggers;
     }
 
     @Override

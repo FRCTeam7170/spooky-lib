@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-// TODO: getter for ignoreMistrigger
 // TODO: thread safety
 // TODO: logging
 // TODO: document transition resolution
@@ -53,7 +52,7 @@ public final class FSM<S, T> {
          */
         private boolean built = false;
 
-        private boolean ignoreMistrigger;
+        private boolean ignoreInvalidTriggers;
         private EventFunction beforeAll;
         private Consumer<Event> afterAll;
         final StateMap<S, T> stateMap;
@@ -96,9 +95,9 @@ public final class FSM<S, T> {
          * @return this builder.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
-        public I ignoreMistrigger() {
+        public I ignoreInvalidTriggers() {
             requireNotBuilt();
-            ignoreMistrigger = true;
+            ignoreInvalidTriggers = true;
             return getThis();
         }
 
@@ -494,11 +493,11 @@ public final class FSM<S, T> {
          * @throws NullPointerException if the given array of states or any contained state is {@code null}.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
-        public BuilderFromStrings<T> ignoreMistrigger(String... states) {
+        public BuilderFromStrings<T> ignoreInvalidTriggers(String... states) {
             requireNotBuilt();
             for (String state : Objects.requireNonNull(states, "states must be non-null")) {
                 str2state(Objects.requireNonNull(state, "cannot ignore invalid triggers on null state"))
-                        .ignoreMistrigger = true;
+                        .ignoreInvalidTriggers = true;
             }
             return this;
         }
@@ -734,14 +733,14 @@ public final class FSM<S, T> {
         );
     }
 
-    private final boolean ignoreMistrigger;
+    private final boolean ignoreInvalidTriggers;
     private final EventFunction beforeAll;
     private final Consumer<Event> afterAll;
     private final StateMap<S, T> stateMap;
     private StateBundle<T> currSB;
 
     private FSM(Builder<S, T, ?> builder, StateBundle<T> initial) {
-        ignoreMistrigger = builder.ignoreMistrigger;
+        ignoreInvalidTriggers = builder.ignoreInvalidTriggers;
         beforeAll = builder.beforeAll;
         afterAll = builder.afterAll;
         stateMap = builder.stateMap;
@@ -885,7 +884,7 @@ public final class FSM<S, T> {
                 Objects.requireNonNull(trgr, "trigger must be non-null")
         );
         if (transition == null) {
-            if (!ignoreMistrigger && !currSB.state.getIgnoreMistrigger()) {
+            if (!ignoreInvalidTriggers && !currSB.state.getIgnoreInvalidTriggers()) {
                 throw new IllegalStateException(
                         String.format("cannot use trigger '%s' in state '%s'", trgr, State.fullName(currSB.state))
                 );
@@ -946,5 +945,4 @@ public final class FSM<S, T> {
             state.onEnter(event);
         }
     }
-
 }
