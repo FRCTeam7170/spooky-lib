@@ -55,6 +55,10 @@ final class Transition<T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
+         * <p>
+         * Multiple before callbacks can be added and they will be invoked in the order they were added. If any before
+         * callback returns false, the remaining before callbacks will not be executed.
+         * </p>
          *
          * @param callback a callback to be run before this transition executes.
          * @return this builder.
@@ -74,6 +78,10 @@ final class Transition<T> {
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple before callbacks can be added and they will be invoked in the order they were added. If any before
+         * callback returns false, the remaining before callbacks will not be executed.
          * </p>
          *
          * @param callback a callback to be run before this transition executes.
@@ -96,6 +104,10 @@ final class Transition<T> {
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple before callbacks can be added and they will be invoked in the order they were added. If any before
+         * callback returns false, the remaining before callbacks will not be executed.
          * </p>
          *
          * @param callback a callback to be run before this transition executes.
@@ -120,6 +132,9 @@ final class Transition<T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
+         * <p>
+         * Multiple after callbacks can be added and they will be invoked in the order they were added.
+         * </p>
          *
          * @param callback a callback to be run after this transition executes.
          * @return this builder.
@@ -136,6 +151,9 @@ final class Transition<T> {
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple after callbacks can be added and they will be invoked in the order they were added.
          * </p>
          *
          * @param callback a callback to be run after this transition executes.

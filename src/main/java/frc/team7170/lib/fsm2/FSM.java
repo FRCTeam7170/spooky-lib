@@ -102,8 +102,6 @@ public final class FSM<S, T> {
             return getThis();
         }
 
-        // TODO: document how multiple callbacks can be added
-
         /**
          * <p>
          * Register a callback to be run before all transitions/state changes occur. The associated transition/state
@@ -111,6 +109,10 @@ public final class FSM<S, T> {
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple before all callbacks can be added and they will be invoked in the order they were added. If any
+         * before all callback returns false, the remaining before all callbacks will not be executed.
          * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
@@ -134,6 +136,10 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
+         * <p>
+         * Multiple before all callbacks can be added and they will be invoked in the order they were added. If any
+         * before all callback returns false, the remaining before all callbacks will not be executed.
+         * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
          * @return this builder.
@@ -156,6 +162,10 @@ public final class FSM<S, T> {
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple before all callbacks can be added and they will be invoked in the order they were added. If any
+         * before all callback returns false, the remaining before all callbacks will not be executed.
          * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
@@ -182,6 +192,9 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
+         * <p>
+         * Multiple after all callbacks can be added and they will be invoked in the order they were added.
+         * </p>
          *
          * @param callback a callback to be run after all transitions/state changes occur.
          * @return this builder.
@@ -200,6 +213,9 @@ public final class FSM<S, T> {
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple after all callbacks can be added and they will be invoked in the order they were added.
          * </p>
          *
          * @param callback a callback to be run after all transitions/state changes occur.
@@ -495,6 +511,9 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
+         * <p>
+         * Multiple on enter callbacks can be added and they will be invoked in the order they were added.
+         * </p>
          *
          * @param state the state to register a callback with.
          * @param callback a callback to be run after the given state is entered.
@@ -514,6 +533,9 @@ public final class FSM<S, T> {
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple on enter callbacks can be added and they will be invoked in the order they were added.
          * </p>
          *
          * @param state the state to register a callback with.
@@ -543,6 +565,9 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
+         * <p>
+         * Multiple on exit callbacks can be added and they will be invoked in the order they were added.
+         * </p>
          *
          * @param state the state to register a callback with.
          * @param callback a callback to be run before the given state is exited.
@@ -562,6 +587,9 @@ public final class FSM<S, T> {
          * </p>
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple on exit callbacks can be added and they will be invoked in the order they were added.
          * </p>
          *
          * @param state the state to register a callback with.
