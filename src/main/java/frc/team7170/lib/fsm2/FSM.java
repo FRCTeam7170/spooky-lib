@@ -2,7 +2,6 @@ package frc.team7170.lib.fsm2;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -10,9 +9,7 @@ import java.util.stream.Collectors;
 // TODO: thread safety
 // TODO: logging
 // TODO: document transition resolution
-// TODO: add static methods to State interface for comparing states (equality, super, sub, etc.)
 // TODO: if a trigger occurs while a state change is in progress, queue it
-// TODO: compose functional interfaces to allow multiple (andThen, etc.)
 
 /**
  * TODO: mention:
@@ -57,7 +54,7 @@ public final class FSM<S, T> {
         private boolean built = false;
 
         private boolean ignoreMistrigger;
-        private Function<Event, Boolean> beforeAll;
+        private EventFunction beforeAll;
         private Consumer<Event> afterAll;
         final StateMap<S, T> stateMap;
 
@@ -105,6 +102,8 @@ public final class FSM<S, T> {
             return getThis();
         }
 
+        // TODO: document how multiple callbacks can be added
+
         /**
          * <p>
          * Register a callback to be run before all transitions/state changes occur. The associated transition/state
@@ -113,16 +112,10 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one before all callback can be registered; multiple calls to any version of the {@code beforeAll} method
-         * will result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to
-         * register multiple before all callbacks.
-         * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code beforeAll} has been called previously.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I beforeAll(Runnable callback) {
@@ -141,16 +134,10 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one before all callback can be registered; multiple calls to any version of the {@code beforeAll} method
-         * will result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to
-         * register multiple before all callbacks.
-         * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code beforeAll} has been called previously.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I beforeAll(Consumer<Event> callback) {
@@ -170,24 +157,20 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one before all callback can be registered; multiple calls to any version of the {@code beforeAll} method
-         * will result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to
-         * register multiple before all callbacks.
-         * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code beforeAll} has been called previously.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
-        public I beforeAll(Function<Event, Boolean> callback) {
+        public I beforeAll(EventFunction callback) {
             requireNotBuilt();
-            if (beforeAll != null) {
-                throw new IllegalStateException("cannot register more than one beforeAll callback");
+            Objects.requireNonNull(callback, "callback must be non-null");
+            if (beforeAll == null) {
+                beforeAll = callback;
+            } else {
+                beforeAll = beforeAll.seqCompose(callback);
             }
-            beforeAll = Objects.requireNonNull(callback, "callback must be non-null");
             return getThis();
         }
 
@@ -199,16 +182,10 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one after all callback can be registered; multiple calls to any version of the {@code afterAll} method
-         * will result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to
-         * register multiple after all callbacks.
-         * </p>
          *
          * @param callback a callback to be run after all transitions/state changes occur.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code afterAll} has been called previously.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I afterAll(Runnable callback) {
@@ -224,24 +201,20 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one after all callback can be registered; multiple calls to any version of the {@code afterAll} method
-         * will result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to
-         * register multiple after all callbacks.
-         * </p>
          *
          * @param callback a callback to be run after all transitions/state changes occur.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code afterAll} has been called previously.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I afterAll(Consumer<Event> callback) {
             requireNotBuilt();
-            if (afterAll != null) {
-                throw new IllegalStateException("cannot register more than one afterAll callback");
+            Objects.requireNonNull(callback, "callback must be non-null");
+            if (afterAll == null) {
+                afterAll = callback;
+            } else {
+                afterAll = afterAll.andThen(callback);
             }
-            afterAll = Objects.requireNonNull(callback, "callback must be non-null");
             return getThis();
         }
 
@@ -522,19 +495,12 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one on enter callback can be registered with any one state; multiple calls to any version of the
-         * {@code onEnter} method with the same state will result in an
-         * {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register multiple on
-         * enter callbacks with the same state.
-         * </p>
          *
          * @param state the state to register a callback with.
          * @param callback a callback to be run after the given state is entered.
          * @return this builder.
          * @throws NullPointerException if the given state or callback is {@code null}.
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
-         * @throws IllegalStateException if {@code onEnter} has been called previously with the given state.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> onEnter(String state, Runnable callback) {
@@ -549,28 +515,23 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one on enter callback can be registered with any one state; multiple calls to any version of the
-         * {@code onEnter} method with the same state will result in an
-         * {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register multiple on
-         * enter callbacks with the same state.
-         * </p>
          *
          * @param state the state to register a callback with.
          * @param callback a callback to be run after the given state is entered.
          * @return this builder.
          * @throws NullPointerException if the given state or callback is {@code null}.
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
-         * @throws IllegalStateException if {@code onEnter} has been called previously with the given state.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> onEnter(String state, Consumer<Event> callback) {
             requireNotBuilt();
+            Objects.requireNonNull(callback, "callback must be non-null");
             BaseState s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
-            if (s.onEnter != null) {
-                throw new IllegalStateException("cannot register more than one onEnter callback per state");
+            if (s.onEnter == null) {
+                s.onEnter = callback;
+            } else {
+                s.onEnter = s.onEnter.andThen(callback);
             }
-            s.onEnter = Objects.requireNonNull(callback, "callback must be non-null");
             return this;
         }
 
@@ -582,19 +543,12 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one on exit callback can be registered with any one state; multiple calls to any version of the
-         * {@code onExit} method with the same state will result in an
-         * {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register multiple on
-         * exit callbacks with the same state.
-         * </p>
          *
          * @param state the state to register a callback with.
          * @param callback a callback to be run before the given state is exited.
          * @return this builder.
          * @throws NullPointerException if the given state or callback is {@code null}.
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
-         * @throws IllegalStateException if {@code onExit} has been called previously with the given state.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> onExit(String state, Runnable callback) {
@@ -609,28 +563,23 @@ public final class FSM<S, T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition/state change procedure will be delayed.
          * </p>
-         * <p>
-         * Only one on exit callback can be registered with any one state; multiple calls to any version of the
-         * {@code onExit} method with the same state will result in an
-         * {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register multiple on
-         * exit callbacks with the same state.
-         * </p>
          *
          * @param state the state to register a callback with.
          * @param callback a callback to be run before the given state is exited.
          * @return this builder.
          * @throws NullPointerException if the given state or callback is {@code null}.
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
-         * @throws IllegalStateException if {@code onExit} has been called previously with the given state.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> onExit(String state, Consumer<Event> callback) {
             requireNotBuilt();
+            Objects.requireNonNull(callback, "callback must be non-null");
             BaseState s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
-            if (s.onExit != null) {
-                throw new IllegalStateException("cannot register more than one onExit callback per state");
+            if (s.onExit == null) {
+                s.onExit = callback;
+            } else {
+                s.onExit = s.onExit.andThen(callback);
             }
-            s.onExit = Objects.requireNonNull(callback, "callback must be non-null");
             return this;
         }
 
@@ -758,7 +707,7 @@ public final class FSM<S, T> {
     }
 
     private final boolean ignoreMistrigger;
-    private final Function<Event, Boolean> beforeAll;
+    private final EventFunction beforeAll;
     private final Consumer<Event> afterAll;
     private final StateMap<S, T> stateMap;
     private StateBundle<T> currSB;

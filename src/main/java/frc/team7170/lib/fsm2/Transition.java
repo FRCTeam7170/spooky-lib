@@ -3,9 +3,9 @@ package frc.team7170.lib.fsm2;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 // TODO: comment in FSM class where Transition does null checks for us.
+// TODO: protect against calling methods after build called?
 
 /**
  * {@code Transition} is used internally to represent a state transition on a {@link FSM FSM}.
@@ -35,7 +35,7 @@ final class Transition<T> {
         private final StateBundle<T> dst;
         private final I parent;
         private final boolean internal;
-        private Function<Event, Boolean> before;
+        private EventFunction before;
         private Consumer<Event> after;
 
         private Builder(T trigger, List<StateBundle<T>> srcs, StateBundle<T> dst, I parent, boolean internal) {
@@ -55,16 +55,10 @@ final class Transition<T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
-         * <p>
-         * Only one before callback can be registered; multiple calls to any version of the {@code before} method will
-         * result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register
-         * multiple before callbacks.
-         * </p>
          *
          * @param callback a callback to be run before this transition executes.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code before} has been called previously.
          */
         public Builder<S, T, I> before(Runnable callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
@@ -81,16 +75,10 @@ final class Transition<T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
-         * <p>
-         * Only one before callback can be registered; multiple calls to any version of the {@code before} method will
-         * result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register
-         * multiple before callbacks.
-         * </p>
          *
          * @param callback a callback to be run before this transition executes.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code before} has been called previously.
          */
         public Builder<S, T, I> before(Consumer<Event> callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
@@ -109,22 +97,18 @@ final class Transition<T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
-         * <p>
-         * Only one before callback can be registered; multiple calls to any version of the {@code before} method will
-         * result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register
-         * multiple before callbacks.
-         * </p>
          *
          * @param callback a callback to be run before this transition executes.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code before} has been called previously.
          */
-        public Builder<S, T, I> before(Function<Event, Boolean> callback) {
-            if (before != null) {
-                throw new IllegalStateException("cannot register more than one before callback");
+        public Builder<S, T, I> before(EventFunction callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            if (before == null) {
+                before = callback;
+            } else {
+                before = before.seqCompose(callback);
             }
-            before = Objects.requireNonNull(callback, "callback must be non-null");
             return this;
         }
 
@@ -136,16 +120,10 @@ final class Transition<T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
-         * <p>
-         * Only one after callback can be registered; multiple calls to any version of the {@code after} method will
-         * result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register
-         * multiple after callbacks.
-         * </p>
          *
          * @param callback a callback to be run after this transition executes.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code after} has been called previously.
          */
         public Builder<S, T, I> after(Runnable callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
@@ -159,22 +137,18 @@ final class Transition<T> {
          * <p>
          * The callback should return quickly, lest the rest of the transition procedure will be delayed.
          * </p>
-         * <p>
-         * Only one after callback can be registered; multiple calls to any version of the {@code after} method will
-         * result in an {@link IllegalStateException IllegalStateException} to prevent accidentally trying to register
-         * multiple after callbacks.
-         * </p>
          *
          * @param callback a callback to be run after this transition executes.
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
-         * @throws IllegalStateException if {@code after} has been called previously.
          */
         public Builder<S, T, I> after(Consumer<Event> callback) {
-            if (after != null) {
-                throw new IllegalStateException("cannot register more than one after callback");
+            Objects.requireNonNull(callback, "callback must be non-null");
+            if (after == null) {
+                after = callback;
+            } else {
+                after = after.andThen(callback);
             }
-            after = Objects.requireNonNull(callback, "callback must be non-null");
             return this;
         }
 
@@ -220,11 +194,11 @@ final class Transition<T> {
     }
 
     private final StateBundle<T> dst;
-    private final Function<Event, Boolean> before;
+    private final EventFunction before;
     private final Consumer<Event> after;
     final boolean internal;
 
-    private Transition(StateBundle<T> dst, Function<Event, Boolean> before, Consumer<Event> after, boolean internal) {
+    private Transition(StateBundle<T> dst, EventFunction before, Consumer<Event> after, boolean internal) {
         this.dst = dst;
         this.before = before;
         this.after = after;
