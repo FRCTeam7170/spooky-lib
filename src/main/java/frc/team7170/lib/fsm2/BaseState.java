@@ -3,8 +3,8 @@ package frc.team7170.lib.fsm2;
 import java.util.function.Consumer;
 
 /**
- * A basic implementation of {@link State State} used internally for when a {@link FSM FSM} is instantiated used strings
- * to represent states.
+ * A basic implementation of {@link State State} used internally for when a {@link FSM FSM} is instantiated using
+ * strings to represent states.
  *
  * @author Robert Russell
  */
