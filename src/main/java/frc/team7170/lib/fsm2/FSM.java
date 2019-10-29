@@ -13,11 +13,17 @@ import java.util.stream.Collectors;
 // TODO: add static methods to State interface for comparing states (equality, super, sub, etc.)
 // TODO: if a trigger occurs while a state change is in progress, queue it
 // TODO: compose functional interfaces to allow multiple (andThen, etc.)
-// TODO: document that onEnter/onExit callback invocation is naive (e.g. "A/B" -> "A/C" calls onExit and onEnter for
-//       "A")
 
 /**
- * TODO: mention based loosly on pytransitions
+ * TODO: mention:
+ *  based loosly on pytransitions
+ *  complex build procedure
+ *  transition resolution rules and performance
+ *  state naming?
+ *  types of transitions?
+ *  callback order (onEnter/onExit callback invocation is naive (e.g. "A/B" -> "A/C" calls onExit and onEnter for "A"))
+ *  example usage
+ *
  *
  * @author Robert Russell
  */
@@ -32,7 +38,12 @@ public final class FSM<S, T> {
     /**
      * A builder for {@code FSM}s.
      *
-     * @apiNote This class is not strictly abstract, but it should not and cannot be instantiated directly.
+     * @apiNote Calling methods after {@link #build(Object) build} is prohibited in order to enforce the property that
+     * {@code FSM}'s are immutable except for their current state.
+     *
+     * @param <S> the state type.
+     * @param <T> the trigger type.
+     * @param <I> this type.
      *
      * @author Robert Russell.
      * @see BuilderFromStrings
@@ -40,7 +51,11 @@ public final class FSM<S, T> {
      */
     static abstract class Builder<S, T, I extends Builder<S, T, I>> {
 
+        /**
+         * Whether or not {@link #build(Object) build} has been called.
+         */
         private boolean built = false;
+
         private boolean ignoreMistrigger;
         private Function<Event, Boolean> beforeAll;
         private Consumer<Event> afterAll;
@@ -50,23 +65,42 @@ public final class FSM<S, T> {
             this.stateMap = sm;
         }
 
-        private StateBundle<T> resolveState(S s) {
-            StateBundle<T> sb = stateMap.s2bundle(s);
+        /**
+         * Convert the given state to its corresponding {@link StateBundle StateBundle}.
+         *
+         * @param state the state.
+         * @return the resolved {@code StateBundle}.
+         * @throws IllegalArgumentException if the given state does not belong to this FSM.
+         */
+        private StateBundle<T> resolveState(S state) {
+            StateBundle<T> sb = stateMap.s2bundle(state);
             if (sb == null) {
                 throw new IllegalArgumentException("state does not belong to this FSM");
             }
             return sb;
         }
 
+        /**
+         * Get this {@code Builder} as type {@code I}.
+         *
+         * @apiNote This is a weird way of doing this, but it avoids having to cast {@code this} to type {@code I} and
+         * suppress unchecked warnings.
+         *
+         * @return this {@code Builder} as type {@code I}.
+         */
         abstract I getThis();
 
         /**
          * Silently ignore invalid triggers regardless of the current state rather than throw an
-         * {@link IllegalStateException IllegalStateException}. By "invalid trigger", we mean triggers that are either
-         * not associated with any transition in the FSM, or are associated with one or more transitions in the FSM, but
-         * those transitions cannot execute in the current state.
+         * {@link IllegalStateException IllegalStateException} if an invalid trigger occurs. By "invalid trigger", we
+         * mean triggers that are either not associated with any transition in the FSM, or are associated with one or
+         * more transitions in the FSM, but those transitions cannot execute in the current state.
+         *
+         * @return this builder.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I ignoreMistrigger() {
+            requireNotBuilt();
             ignoreMistrigger = true;
             return getThis();
         }
@@ -86,8 +120,10 @@ public final class FSM<S, T> {
          * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code beforeAll} has been called previously.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I beforeAll(Runnable callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
@@ -112,8 +148,10 @@ public final class FSM<S, T> {
          * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code beforeAll} has been called previously.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I beforeAll(Consumer<Event> callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
@@ -139,10 +177,13 @@ public final class FSM<S, T> {
          * </p>
          *
          * @param callback a callback to be run before all transitions/state changes occur.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code beforeAll} has been called previously.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I beforeAll(Function<Event, Boolean> callback) {
+            requireNotBuilt();
             if (beforeAll != null) {
                 throw new IllegalStateException("cannot register more than one beforeAll callback");
             }
@@ -165,8 +206,10 @@ public final class FSM<S, T> {
          * </p>
          *
          * @param callback a callback to be run after all transitions/state changes occur.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code afterAll} has been called previously.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I afterAll(Runnable callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
@@ -188,10 +231,13 @@ public final class FSM<S, T> {
          * </p>
          *
          * @param callback a callback to be run after all transitions/state changes occur.
+         * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@code afterAll} has been called previously.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public I afterAll(Consumer<Event> callback) {
+            requireNotBuilt();
             if (afterAll != null) {
                 throw new IllegalStateException("cannot register more than one afterAll callback");
             }
@@ -199,6 +245,17 @@ public final class FSM<S, T> {
             return getThis();
         }
 
+        /**
+         * Convert the list of source states to their corresponding {@link StateBundle StateBundles}.
+         *
+         * @param srcs the list of source states.
+         * @return the resolved list of {@code StateBundles}
+         * @throws NullPointerException if the given list of source states or any contained source state is
+         * {@code null}.
+         * @throws IllegalArgumentException if any source state in the given list of source states does not belong to
+         * this FSM.
+         * @throws IllegalArgumentException if any source state in the given list of source states is inaccessible.
+         */
         private List<StateBundle<T>> resolveSrcs(List<S> srcs) {
             if (Objects.requireNonNull(srcs, "srcs must be non-null").isEmpty()) {
                 throw new IllegalArgumentException("transitions must have at least one src state");
@@ -206,11 +263,21 @@ public final class FSM<S, T> {
             return srcs.stream()
                     .map(s -> Objects.requireNonNull(s, "src must be non-null"))
                     .map(this::resolveState)
-                    .map(this::errIfInaccessible)
+                    .map(this::requireAccessible)
                     .collect(Collectors.toUnmodifiableList());
         }
 
-        private StateBundle<T> errIfInaccessible(StateBundle<T> sb) {
+        /**
+         * Require that the state in the given {@link StateBundle StateBundle} be
+         * {@linkplain State#isAccessible() accessible} by throwing an error if it is not.
+         *
+         * @apiNote This method is meant to be similar to {@link Objects#requireNonNull(Object)}.
+         *
+         * @param sb the {@code StateBundle}.
+         * @return the given {@code StateBundle}.
+         * @throws IllegalArgumentException if the state in the given {@code StateBundle} is not accessible.
+         */
+        private StateBundle<T> requireAccessible(StateBundle<T> sb) {
             if (!sb.state.isAccessible()) {
                 throw new IllegalArgumentException("state in transition must be accessible");
             }
@@ -222,17 +289,19 @@ public final class FSM<S, T> {
          * Add a new normal (non-internal and non-reflexive) transition to the FSM being built.
          * </p>
          * <p>
-         * This method is provided for convenience; it is exactly equivalent to calling
-         * {@link #transition(T, List, S)} with the {@code src} argument wrapped in a list.
+         * This method is provided for convenience; it is exactly equivalent to calling {@link #transition(T, List, S)}
+         * with the {@code src} argument wrapped in a list.
          * </p>
          *
-         * @param trigger the trigger string to associate with the transition.
+         * @param trigger the trigger to associate with the transition.
          * @param src the source state for the transition.
          * @param dst the destination state for the transition.
          * @return a {@link Transition.Builder Transition.Builder} instance (to further customize the transition).
          * @throws NullPointerException if {@code trigger}, {@code src}, or {@code dst} is {@code null}.
-         * @throws IllegalArgumentException if the given source or destination state is
-         * {@link State#isAccessible() inaccessible}.
+         * @throws IllegalArgumentException if the given source or destination state does not belong to this FSM.
+         * @throws IllegalArgumentException if the given source or destination state is not
+         * {@link State#isAccessible() accessible}.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public Transition.Builder<S, T, I> transition(T trigger, S src, S dst) {
             return transition(trigger, List.of(src), dst);
@@ -241,20 +310,24 @@ public final class FSM<S, T> {
         /**
          * Add a new normal (non-internal and non-reflexive) transition to the FSM being built.
          *
-         * @param trigger the trigger string to associate with the transition.
+         * @param trigger the trigger to associate with the transition.
          * @param srcs a list of source states for the transition.
          * @param dst the destination state for the transition.
          * @return a {@link Transition.Builder Transition.Builder} instance (to further customize the transition).
          * @throws NullPointerException if {@code trigger}, {@code srcs}, or {@code dst} is {@code null}.
-         * @throws IllegalArgumentException if any of the given source states or the destination state is
-         * {@link State#isAccessible() inaccessible}.
+         * @throws IllegalArgumentException if any of the given source states or the destination state does not belong
+         * to this FSM.
+         * @throws IllegalArgumentException if any of the given source states or the destination state is not
+         * {@link State#isAccessible() accessible}.
          * @throws IllegalArgumentException if the given list of source states is empty.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public Transition.Builder<S, T, I> transition(T trigger, List<S> srcs, S dst) {
+            requireNotBuilt();
             return Transition.Builder.normal(
                     Objects.requireNonNull(trigger, "trigger must be non-null"),
                     resolveSrcs(srcs),
-                    errIfInaccessible(resolveState(Objects.requireNonNull(dst, "dst must be non-null"))),
+                    requireAccessible(resolveState(Objects.requireNonNull(dst, "dst must be non-null"))),
                     getThis()
             );
         }
@@ -274,11 +347,13 @@ public final class FSM<S, T> {
          * {@link #internalTransition(T, List)} with the {@code src} argument wrapped in a list.
          * </p>
          *
-         * @param trigger the trigger string to associate with the transition.
+         * @param trigger the trigger to associate with the transition.
          * @param src the source state for the transition.
          * @return a {@link Transition.Builder Transition.Builder} instance (to further customize the transition).
          * @throws NullPointerException if {@code trigger} or {@code src} is {@code null}.
-         * @throws IllegalArgumentException if the given source state is {@link State#isAccessible() inaccessible}.
+         * @throws IllegalArgumentException if the given source state does not belong to this FSM.
+         * @throws IllegalArgumentException if the given source state is not {@link State#isAccessible() accessible}.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public Transition.Builder<S, T, I> internalTransition(T trigger, S src) {
             return internalTransition(trigger, List.of(src));
@@ -295,15 +370,18 @@ public final class FSM<S, T> {
          * {@code onExit} and {@code onEnter}).
          * </p>
          *
-         * @param trigger the trigger string to associate with the transition.
+         * @param trigger the trigger to associate with the transition.
          * @param srcs a list of source states for the transition.
          * @return a {@link Transition.Builder Transition.Builder} instance (to further customize the transition).
          * @throws NullPointerException if {@code trigger} or {@code srcs} is {@code null}.
-         * @throws IllegalArgumentException if any of the given source states are
-         * {@link State#isAccessible() inaccessible}.
+         * @throws IllegalArgumentException if any of the given source states does not belong to this FSM.
+         * @throws IllegalArgumentException if any of the given source states are not
+         * {@link State#isAccessible() accessible}.
          * @throws IllegalArgumentException if the given list of source states is empty.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public Transition.Builder<S, T, I> internalTransition(T trigger, List<S> srcs) {
+            requireNotBuilt();
             return Transition.Builder.internal(
                     Objects.requireNonNull(trigger, "trigger must be non-null"),
                     resolveSrcs(srcs),
@@ -324,11 +402,13 @@ public final class FSM<S, T> {
          * {@link #reflexiveTransition(T, List)} with the {@code src} argument wrapped in a list.
          * </p>
          *
-         * @param trigger the trigger string to associate with the transition.
+         * @param trigger the trigger to associate with the transition.
          * @param src the source state for the transition.
          * @return a {@link Transition.Builder Transition.Builder} instance (to further customize the transition).
          * @throws NullPointerException if {@code trigger} or {@code src} is {@code null}.
-         * @throws IllegalArgumentException if the given source state is {@link State#isAccessible() inaccessible}.
+         * @throws IllegalArgumentException if the given source state does not belong to this FSM.
+         * @throws IllegalArgumentException if the given source state is not {@link State#isAccessible() accessible}.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public Transition.Builder<S, T, I> reflexiveTransition(T trigger, S src) {
             return reflexiveTransition(trigger, List.of(src));
@@ -347,11 +427,14 @@ public final class FSM<S, T> {
          * @param srcs a list of source states for the transition.
          * @return a {@link Transition.Builder Transition.Builder} instance (to further customize the transition).
          * @throws NullPointerException if {@code trigger} or {@code srcs} is {@code null}.
-         * @throws IllegalArgumentException if any of the given source states are
-         * {@link State#isAccessible() inaccessible}.
+         * @throws IllegalArgumentException if any of the given source states does not belong to this FSM.
+         * @throws IllegalArgumentException if any of the given source states are not
+         * {@link State#isAccessible() accessible}.
          * @throws IllegalArgumentException if the given list of source states is empty.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public Transition.Builder<S, T, I> reflexiveTransition(T trigger, List<S> srcs) {
+            requireNotBuilt();
             return Transition.Builder.reflexive(
                     Objects.requireNonNull(trigger, "trigger must be non-null"),
                     resolveSrcs(srcs),
@@ -370,11 +453,6 @@ public final class FSM<S, T> {
          * should be invoked manually.
          * </p>
          *
-         * TODO: this makes no sense
-         * @apiNote We prohibit calling {@code build} more than once because (a) it is almost certainly an error on the
-         * part of the user and (b) it could cause issues because the same list of transitions used in the builder is
-         * used in the FSM.
-         *
          * @param initial the initial state for the FSM.
          * @return the newly-constructed {@code FSM}.
          * @throws NullPointerException if the given initial state is {@code null}.
@@ -382,35 +460,28 @@ public final class FSM<S, T> {
          * @throws IllegalStateException if {@code build} has already been called.
          */
         public FSM<S, T> build(S initial) {
-            if (built) {
-                throw new IllegalStateException("build already invoked");
-            }
+            requireNotBuilt();
             built = true;
             return new FSM<>(
                     this,
                     resolveState(Objects.requireNonNull(initial, "initial state must be non-null")
             ));
         }
+
+        void requireNotBuilt() {
+            if (built) {
+                throw new IllegalStateException("build already invoked");
+            }
+        }
     }
 
     /**
-     * A builder for {@code FSM}s that uses raw strings to represent states.
+     * A builder for {@code FSM}s that uses strings to represent states.
      *
      * @author Robert Russell
      */
     public static final class BuilderFromStrings<T> extends FSM.Builder<String, T, BuilderFromStrings<T>> {
 
-        /**
-         * @apiNote This constructor is not public so the user has to use the
-         * {@linkplain #builder(String...) static factory method} instead, thereby encouraging the use of more
-         * compact syntax (i.e.
-         * <pre>{@code FSM.fromStrings(...)...}</pre>
-         * instead of
-         * <pre>{@code new FSM.BuilderFromStrings(...)...}</pre>
-         * ).
-         *
-         * @param states an array of all the states for the FSM being built in the form of strings.
-         */
         BuilderFromStrings(String[] states, Supplier<Map<T, Transition<T>>> mapSupplier) {
             // Static factory methods guarantee states is non-null.
             // StringStateMap constructor guarantees states is not empty.
@@ -424,18 +495,20 @@ public final class FSM<S, T> {
 
         /**
          * Silently ignore invalid triggers on the given states rather than throw an
-         * {@link IllegalStateException IllegalStateException}. By "invalid trigger", we mean triggers that are either
-         * not associated with any transition in the FSM, or are associated with one or more transitions in the FSM, but
-         * those transitions cannot execute in the current state.
+         * {@link IllegalStateException IllegalStateException} if an invalid trigger occurs. By "invalid trigger", we
+         * mean triggers that are either not associated with any transition in the FSM, or are associated with one or
+         * more transitions in the FSM, but those transitions cannot execute in the current state.
          *
          * @param states an array of states to ignore invalid triggers on.
+         * @return this builder.
          * @throws IllegalArgumentException if any of the given states does not belong to the FSM being built.
          * @throws NullPointerException if the given array of states or any contained state is {@code null}.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> ignoreMistrigger(String... states) {
+            requireNotBuilt();
             for (String state : Objects.requireNonNull(states, "states must be non-null")) {
-                // This null check is redundant, but makes the error message more descriptive.
-                str2State(Objects.requireNonNull(state, "cannot ignore mistriggers on null state"))
+                str2state(Objects.requireNonNull(state, "cannot ignore invalid triggers on null state"))
                         .ignoreMistrigger = true;
             }
             return this;
@@ -456,10 +529,13 @@ public final class FSM<S, T> {
          * enter callbacks with the same state.
          * </p>
          *
+         * @param state the state to register a callback with.
          * @param callback a callback to be run after the given state is entered.
+         * @return this builder.
          * @throws NullPointerException if the given state or callback is {@code null}.
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
          * @throws IllegalStateException if {@code onEnter} has been called previously with the given state.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> onEnter(String state, Runnable callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
@@ -480,14 +556,17 @@ public final class FSM<S, T> {
          * enter callbacks with the same state.
          * </p>
          *
+         * @param state the state to register a callback with.
          * @param callback a callback to be run after the given state is entered.
+         * @return this builder.
          * @throws NullPointerException if the given state or callback is {@code null}.
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
          * @throws IllegalStateException if {@code onEnter} has been called previously with the given state.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> onEnter(String state, Consumer<Event> callback) {
-            // This null check is redundant, but makes the error message more descriptive.
-            BaseState s = str2State(Objects.requireNonNull(state, "cannot attach callback to null state"));
+            requireNotBuilt();
+            BaseState s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
             if (s.onEnter != null) {
                 throw new IllegalStateException("cannot register more than one onEnter callback per state");
             }
@@ -510,10 +589,13 @@ public final class FSM<S, T> {
          * exit callbacks with the same state.
          * </p>
          *
+         * @param state the state to register a callback with.
          * @param callback a callback to be run before the given state is exited.
+         * @return this builder.
          * @throws NullPointerException if the given state or callback is {@code null}.
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
          * @throws IllegalStateException if {@code onExit} has been called previously with the given state.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> onExit(String state, Runnable callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
@@ -534,14 +616,17 @@ public final class FSM<S, T> {
          * exit callbacks with the same state.
          * </p>
          *
+         * @param state the state to register a callback with.
          * @param callback a callback to be run before the given state is exited.
+         * @return this builder.
          * @throws NullPointerException if the given state or callback is {@code null}.
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
          * @throws IllegalStateException if {@code onExit} has been called previously with the given state.
+         * @throws IllegalStateException if {@link #build build} has already been called.
          */
         public BuilderFromStrings<T> onExit(String state, Consumer<Event> callback) {
-            // This null check is redundant, but makes the error message more descriptive.
-            BaseState s = str2State(Objects.requireNonNull(state, "cannot attach callback to null state"));
+            requireNotBuilt();
+            BaseState s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
             if (s.onExit != null) {
                 throw new IllegalStateException("cannot register more than one onExit callback per state");
             }
@@ -549,32 +634,21 @@ public final class FSM<S, T> {
             return this;
         }
 
-        private BaseState str2State(String state) {
-            return (BaseState) stateMap.s2state(Objects.requireNonNull(state, "state must be non-null"));
+        private BaseState str2state(String state) {
+            return (BaseState) stateMap.s2state(state);
         }
 
     }
 
     /**
-     * A builder for {@code FSM}s that uses the constants of an enum implementor of {@link State State}
-     * to represent states.
+     * A builder for {@code FSM}s that uses the constants of an enum implementor of {@link State State} to represent
+     * states.
      *
      * @author Robert Russell
      */
     public static final class BuilderFromEnum<S extends Enum<S> & State, T>
             extends Builder<S, T, BuilderFromEnum<S, T>> {
 
-        /**
-         * @apiNote This constructor is not public so the user has to use the
-         * {@linkplain #builder(Class) static factory method} instead, thereby encouraging the use of more
-         * compact syntax (i.e.
-         * <pre>{@code FSM.fromEnum(...)...}</pre>
-         * instead of
-         * <pre>{@code new FSM.BuilderFromEnum(...)...}</pre>
-         * ).
-         *
-         * @param stateEnum the class of the enum containing all the states for the FSM being built.
-         */
         BuilderFromEnum(Class<S> stateEnum, Supplier<Map<T, Transition<T>>> mapSupplier) {
             // EnumStateMap constructor guarantees stateEnum has > 0 constants.
             super(new EnumStateMap<>(stateEnum, mapSupplier));
@@ -588,8 +662,8 @@ public final class FSM<S, T> {
 
     /**
      * <p>
-     * Get a {@linkplain BuilderFromStrings builder} for a {@code FSM} in which the states are
-     * represented by strings.
+     * Get a {@linkplain BuilderFromStrings builder} for an {@code FSM} in which the states and triggers are represented
+     * by strings.
      * </p>
      * <p>
      * Every given state name must be fully qualified (i.e. contain all its ancestors delimited by
@@ -601,7 +675,7 @@ public final class FSM<S, T> {
      * </p>
      *
      * @param states an array of all the states for the FSM.
-     * @return a builder for an FSM in which the states are represented by strings.
+     * @return a builder for an {@code FSM} in which the states and triggers are represented by strings.
      * @throws NullPointerException if the given string array or any contained string is {@code null}.
      */
     public static BuilderFromStrings<String> builder(String... states) {
@@ -611,6 +685,28 @@ public final class FSM<S, T> {
         );
     }
 
+    /**
+     * <p>
+     * Get a {@linkplain BuilderFromStrings builder} for an {@code FSM} in which the states are represented by strings
+     * and the triggers are represented by enum constants.
+     * </p>
+     * <p>
+     * Every given state name must be fully qualified (i.e. contain all its ancestors delimited by
+     * {@value #SUB_STATE_SEP}). Ancestor states which are not explicitly provided are implied, but are considered
+     * inaccessible (i.e. cannot be entered by the FSM). For example, calling this method with
+     * {@code {"A", "A/B", "C/D"}} will create an FSM with four states ("A", "A/B", "C", and "C/D"), all of which are
+     * accessible except for "C" (i.e. the FSM cannot (directly) assume state "C", though it <em>can</em> assume state
+     * "C/D").
+     * </p>
+     *
+     * @param <T> the trigger type.
+     * @param triggerEnum the class object of the enum whose constants are to be used for triggers.
+     * @param states an array of all the states for the FSM.
+     * @return a builder for an {@code FSM} in which the states are represented by strings and the triggers are
+     * represented by enum constants.
+     * @throws NullPointerException if the given trigger enum class is {@code null}.
+     * @throws NullPointerException if the given string array or any contained string is {@code null}.
+     */
     public static <T extends Enum<T>> BuilderFromStrings<T> builder(Class<T> triggerEnum, String... states) {
         Objects.requireNonNull(triggerEnum, "triggerEnum must be non-null");
         return new BuilderFromStrings<>(
@@ -620,14 +716,15 @@ public final class FSM<S, T> {
     }
 
     /**
-     * Get a {@linkplain BuilderFromEnum builder} for a {@code FSM} in which the states are represented
-     * by constants in the given enum implementing the {@link State State} interface.
+     * Get a {@linkplain BuilderFromEnum builder} for an {@code FSM} in which the states are represented
+     * by constants in the given enum implementing the {@link State State} interface and the triggers are represented by
+     * strings.
      *
-     * @param stateEnum the enum class.
-     * @param <T> the enum.
-     * @return a builder for an FSM in which the states are represented by constants in the given enum implementing the
-     * {@link State State} interface.
-     * @throws NullPointerException if the given enum class is {@code null}.
+     * @param <S> the state type.
+     * @param stateEnum the class object of the enum whose constants are to be used for states.
+     * @return a builder for an {@code FSM} in which the states are represented by constants in the given enum
+     * implementing the {@code State} interface and the triggers are represented by strings.
+     * @throws NullPointerException if the given state enum class is {@code null}.
      */
     public static <S extends Enum<S> & State> BuilderFromEnum<S, String> builder(Class<S> stateEnum) {
         return new BuilderFromEnum<>(
@@ -636,6 +733,20 @@ public final class FSM<S, T> {
         );
     }
 
+    /**
+     * Get a {@linkplain BuilderFromEnum builder} for an {@code FSM} in which the states are represented
+     * by constants in the given enum implementing the {@link State State} interface and the triggers are represented by
+     * constants in the other given enum.
+     *
+     * @param <S> the state type.
+     * @param <T> the trigger type.
+     * @param triggerEnum the class object of the enum whose constants are to be used for triggers.
+     * @param stateEnum the class object of the enum whose constants are to be used for states.
+     * @return a builder for an {@code FSM} in which the states are represented by constants in the given enum
+     * implementing the {@code State} interface and the triggers are represented by constants in the other given enum.
+     * @throws NullPointerException if the given trigger enum class is {@code null}.
+     * @throws NullPointerException if the given state enum class is {@code null}.
+     */
     public static <S extends Enum<S> & State, T extends Enum<T>> BuilderFromEnum<S, T> builder(
             Class<T> triggerEnum, Class<S> stateEnum
     ) {
@@ -660,14 +771,19 @@ public final class FSM<S, T> {
         currSB = initial;
     }
 
+    /**
+     * Get the state the {@code FSM} is currently in.
+     *
+     * @return the state the {@code FSM} is currently in.
+     */
     public S getState() {
         return stateMap.state2s(currSB.state);
     }
 
     /**
-     * Get the {@linkplain State state} the FSM is currently in.
+     * Get the {@linkplain State state} the {@code FSM} is currently in.
      *
-     * @return the {@linkplain State state} the FSM is currently in.
+     * @return the {@linkplain State state} the {@code FSM} is currently in.
      */
     public State getStateObj() {
         return currSB.state;
@@ -675,17 +791,17 @@ public final class FSM<S, T> {
 
     /**
      * <p>
-     * Get whether or not the FSM is in the given {@linkplain State state}.
+     * Get whether or not the {@code FSM} is in the given state.
      * </p>
      * <p>
-     * An FSM is considered "in" a given state if that state is equal to or an ancestor of the FSM's
+     * An {@code FSM} is considered "in" a given state if that state is equal to or an ancestor of the {@code FSM}'s
      * {@linkplain #getStateObj() current state}.
      * </p>
      *
-     * @param state the state to check if the FSM is in.
-     * @return whether or not the FSM is in the given state.
+     * @param state the state to check if the {@code FSM} is in.
+     * @return whether or not the {@code FSM} is in the given state.
      * @throws NullPointerException if the given state is {@code null}.
-     * @throws IllegalArgumentException if the given state does not belong to this FSM.
+     * @throws IllegalArgumentException if the given state does not belong to this {@code FSM}.
      */
     public boolean in(S state) {
         return inLineage(
@@ -696,27 +812,27 @@ public final class FSM<S, T> {
 
     /**
      * <p>
-     * Force the FSM into the given state even if a valid transition from the current state to the given state does not
-     * exist.
+     * Force the {@code FSM} into the given ({@linkplain State#isAccessible() accessible}) state even if a valid
+     * transition from the current state to the given state does not exist.
      * </p>
      * <p>
      * Since use of this method bypasses the whole point of using a state machine, its use is discouraged except in
-     * rare cases (e.g. if the FSM needs to undergo some sort of reset procedure and enter a certain state). If this
-     * method is used, one must be sure to consider the implications of bypassing the predefined transitions.
+     * rare cases (e.g. if the {@code FSM} needs to undergo some sort of reset procedure and enter a certain state). If
+     * this method is used, one must be sure to consider the implications of bypassing the predefined transitions.
      * </p>
      * <p>
      * Since a state change that occurs as a result of calling {@code forceTo} is not associated with any transition, no
      * transition callbacks (i.e. before and after callbacks) occur; however, beforeAll and afterAll callbacks on the
-     * FSM and enter/exit callbacks on the appropriate states are invoked. The forced state change proceeds even if
-     * one of the beforeAll callbacks returns false.
+     * {@code FSM} and enter/exit callbacks on the appropriate states are invoked. The forced state change proceeds even
+     * if one of the beforeAll callbacks returns false.
      * </p>
      * <p>
      * {@code forceTo} is a no-op if the given state is the current state.
      * </p>
      *
-     * @param state the state to force the FSM into.
+     * @param state the state to force the {@code FSM} into.
      * @throws NullPointerException if the given state is {@code null}.
-     * @throws IllegalArgumentException if the given state does not belong to this FSM.
+     * @throws IllegalArgumentException if the given state does not belong to this {@code FSM}.
      * @throws IllegalArgumentException if the given state is inaccessible.
      */
     public void forceTo(S state) {
@@ -725,28 +841,28 @@ public final class FSM<S, T> {
 
     /**
      * <p>
-     * Force the FSM into the given state even if a valid transition from the current state to the given state does not
-     * exist.
+     * Force the {@code FSM} into the given ({@linkplain State#isAccessible() accessible}) state even if a valid
+     * transition from the current state to the given state does not exist.
      * </p>
      * <p>
      * Since use of this method bypasses the whole point of using a state machine, its use is discouraged except in
-     * rare cases (e.g. if the FSM needs to undergo some sort of reset procedure and enter a certain state). If this
-     * method is used, one must be sure to consider the implications of bypassing the predefined transitions.
+     * rare cases (e.g. if the {@code FSM} needs to undergo some sort of reset procedure and enter a certain state). If
+     * this method is used, one must be sure to consider the implications of bypassing the predefined transitions.
      * </p>
      * <p>
      * Since a state change that occurs as a result of calling {@code forceTo} is not associated with any transition, no
      * transition callbacks (i.e. before and after callbacks) occur; however, beforeAll and afterAll callbacks on the
-     * FSM and enter/exit callbacks on the appropriate states are invoked. The forced state change proceeds even if
-     * one of the beforeAll callbacks returns false.
+     * {@code FSM} and enter/exit callbacks on the appropriate states are invoked. The forced state change proceeds even
+     * if one of the beforeAll callbacks returns false.
      * </p>
      * <p>
      * {@code forceTo} is a no-op if the given state is the current state.
      * </p>
      *
-     * @param state the state to force the FSM into.
+     * @param state the state to force the {@code FSM} into.
      * @param args arguments to put in the {@link Event Event} object so that they might be accessed from callbacks.
      * @throws NullPointerException if the given state is {@code null}.
-     * @throws IllegalArgumentException if the given state does not belong to this FSM.
+     * @throws IllegalArgumentException if the given state does not belong to this {@code FSM}.
      * @throws IllegalArgumentException if the given state is inaccessible.
      */
     public void forceTo(S state, Map<String, Object> args) {
@@ -769,7 +885,7 @@ public final class FSM<S, T> {
         Event<S, T> event = new Event<>(
                 this,
                 currSB.state,
-                Objects.requireNonNull(sb.state, "state must be non-null"),
+                sb.state,
                 null,
                 args
         );
