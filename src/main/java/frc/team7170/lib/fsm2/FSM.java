@@ -803,6 +803,32 @@ public final class FSM<S, T> {
      * if one of the beforeAll callbacks returns false.
      * </p>
      * <p>
+     * Callbacks occur in this order:
+     * <ol>
+     *     <li>the {@code FSM}'s before all callbacks in the order they were added (unable to abort state change);</li>
+     *     <li>state on exit callbacks:
+     *         <ol type="i">
+     *             <li>the current states's on exit callbacks in the order they were added;</li>
+     *             <li>the current states's nearest ancestor's on exit callbacks in the order they were added;</li>
+     *             <li>...</li>
+     *             <li>the current states's furthest ancestor's on exit callbacks in the order they were added;</li>
+     *         </ol>
+     *     </li>
+     *     <li><strong>STATE CHANGE</strong></li>
+     *     <li>state on enter callbacks:
+     *         <ol type="i">
+     *             <li>the new (destination) states's furthest ancestor's on enter callbacks in the order they were
+     *             added;</li>
+     *             <li>...</li>
+     *             <li>the new (destination) states's nearest ancestor's on enter callbacks in the order they were
+     *             added;</li>
+     *             <li>the new (destination) states's on enter callbacks in the order they were added;</li>
+     *         </ol>
+     *     </li>
+     *     <li>the {@code FSM}'s after all callbacks in the order they were added.</li>
+     * </ol>
+     * </p>
+     * <p>
      * {@code forceTo} is a no-op if the given state is the current state.
      * </p>
      *
@@ -830,6 +856,32 @@ public final class FSM<S, T> {
      * transition callbacks (i.e. before and after callbacks) occur; however, beforeAll and afterAll callbacks on the
      * {@code FSM} and enter/exit callbacks on the appropriate states are invoked. The forced state change proceeds even
      * if one of the beforeAll callbacks returns false.
+     * </p>
+     * <p>
+     * Callbacks occur in this order:
+     * <ol>
+     *     <li>the {@code FSM}'s before all callbacks in the order they were added (unable to abort state change);</li>
+     *     <li>state on exit callbacks:
+     *         <ol type="i">
+     *             <li>the current states's on exit callbacks in the order they were added;</li>
+     *             <li>the current states's nearest ancestor's on exit callbacks in the order they were added;</li>
+     *             <li>...</li>
+     *             <li>the current states's furthest ancestor's on exit callbacks in the order they were added;</li>
+     *         </ol>
+     *     </li>
+     *     <li><strong>STATE CHANGE</strong></li>
+     *     <li>state on enter callbacks:
+     *         <ol type="i">
+     *             <li>the new (destination) states's furthest ancestor's on enter callbacks in the order they were
+     *             added;</li>
+     *             <li>...</li>
+     *             <li>the new (destination) states's nearest ancestor's on enter callbacks in the order they were
+     *             added;</li>
+     *             <li>the new (destination) states's on enter callbacks in the order they were added;</li>
+     *         </ol>
+     *     </li>
+     *     <li>the {@code FSM}'s after all callbacks in the order they were added.</li>
+     * </ol>
      * </p>
      * <p>
      * {@code forceTo} is a no-op if the given state is the current state.
@@ -874,34 +926,142 @@ public final class FSM<S, T> {
         afterAll(event);
     }
 
-    public boolean trigger(T trgr) {
-        return trigger(trgr, Map.of());
+    /**
+     * <p>
+     * Activate the given trigger.
+     * </p>
+     * <p>
+     * If the given trigger is invalid in the current state (i.e. the given trigger is not associated with any
+     * transition which has the current state as a source state), then an exception is thrown. If this {@code FSM} is
+     * configured to ignore invalid triggers or if the current state is configured to ignore invalid triggers, then this
+     * method returns false instead of throwing an exception to indicate failure.
+     * </p>
+     * <p>
+     * If more than one valid transition from the current state with the given trigger exists, the one that was
+     * registered first during the build procedure is chosen.
+     * </p>
+     * <p>
+     * If a transition from the current state with the given trigger exists, the transition can be aborted if any of the
+     * before callbacks on the transition or any of the before all callbacks on this {@code FSM} return false; if a
+     * transition is aborted in this way, this method returns false.
+     * </p>
+     * <p>
+     * Assuming a transition successfully executes to completion, callbacks occur in this order:
+     * <ol>
+     *     <li>the {@code FSM}'s before all callbacks in the order they were added;</li>
+     *     <li>the transitions's before callbacks in the order they were added;</li>
+     *     <li>state on exit callbacks:
+     *         <ol type="i">
+     *             <li>the current states's on exit callbacks in the order they were added;</li>
+     *             <li>the current states's nearest ancestor's on exit callbacks in the order they were added;</li>
+     *             <li>...</li>
+     *             <li>the current states's furthest ancestor's on exit callbacks in the order they were added;</li>
+     *         </ol>
+     *     </li>
+     *     <li><strong>STATE CHANGE</strong></li>
+     *     <li>state on enter callbacks:
+     *         <ol type="i">
+     *             <li>the new (destination) states's furthest ancestor's on enter callbacks in the order they were
+     *             added;</li>
+     *             <li>...</li>
+     *             <li>the new (destination) states's nearest ancestor's on enter callbacks in the order they were
+     *             added;</li>
+     *             <li>the new (destination) states's on enter callbacks in the order they were added;</li>
+     *         </ol>
+     *     </li>
+     *     <li>the transitions's after callbacks in the order they were added;</li>
+     *     <li>the {@code FSM}'s after all callbacks in the order they were added.</li>
+     * </ol>
+     * </p>
+     *
+     * @param trigger the trigger.
+     * @return whether or not a transition executed to completion.
+     * @throws NullPointerException if the given trigger is {@code null}.
+     * @throws IllegalStateException if the given trigger is invalid and invalid triggers are not ignored in the current
+     * state.
+     */
+    public boolean trigger(T trigger) {
+        return trigger(trigger, Map.of());
     }
-    // TODO: make sure trigger is valid or document that this will fail if trigger is invalid
 
-    public boolean trigger(T trgr, Map<String, Object> args) {
+    /**
+     * <p>
+     * Activate the given trigger.
+     * </p>
+     * <p>
+     * If the given trigger is invalid in the current state (i.e. the given trigger is not associated with any
+     * transition which has the current state as a source state), then an exception is thrown. If this {@code FSM} is
+     * configured to ignore invalid triggers or if the current state is configured to ignore invalid triggers, then this
+     * method returns false instead of throwing an exception to indicate failure.
+     * </p>
+     * <p>
+     * If more than one valid transition from the current state with the given trigger exists, the one that was
+     * registered first during the build procedure is chosen.
+     * </p>
+     * <p>
+     * If a transition from the current state with the given trigger exists, the transition can be aborted if any of the
+     * before callbacks on the transition or any of the before all callbacks on this {@code FSM} return false; if a
+     * transition is aborted in this way, this method returns false.
+     * </p>
+     * <p>
+     * Assuming a transition successfully executes to completion, callbacks occur in this order:
+     * <ol>
+     *     <li>the {@code FSM}'s before all callbacks in the order they were added;</li>
+     *     <li>the transitions's before callbacks in the order they were added;</li>
+     *     <li>state on exit callbacks:
+     *         <ol type="i">
+     *             <li>the current states's on exit callbacks in the order they were added;</li>
+     *             <li>the current states's nearest ancestor's on exit callbacks in the order they were added;</li>
+     *             <li>...</li>
+     *             <li>the current states's furthest ancestor's on exit callbacks in the order they were added;</li>
+     *         </ol>
+     *     </li>
+     *     <li><strong>STATE CHANGE</strong></li>
+     *     <li>state on enter callbacks:
+     *         <ol type="i">
+     *             <li>the new (destination) states's furthest ancestor's on enter callbacks in the order they were
+     *             added;</li>
+     *             <li>...</li>
+     *             <li>the new (destination) states's nearest ancestor's on enter callbacks in the order they were
+     *             added;</li>
+     *             <li>the new (destination) states's on enter callbacks in the order they were added;</li>
+     *         </ol>
+     *     </li>
+     *     <li>the transitions's after callbacks in the order they were added;</li>
+     *     <li>the {@code FSM}'s after all callbacks in the order they were added.</li>
+     * </ol>
+     * </p>
+     *
+     * @param trigger the trigger.
+     * @param args arguments to put in the {@link Event Event} object so that they might be accessed from callbacks.
+     * @return whether or not a transition executed to completion.
+     * @throws NullPointerException if the given trigger is {@code null}.
+     * @throws IllegalStateException if the given trigger is invalid and invalid triggers are not ignored in the current
+     * state.
+     */
+    public boolean trigger(T trigger, Map<String, Object> args) {
         Transition<T> transition = currSB.resolveTransition(
-                Objects.requireNonNull(trgr, "trigger must be non-null")
+                Objects.requireNonNull(trigger, "trigger must be non-null")
         );
         if (transition == null) {
             if (!ignoreInvalidTriggers && !currSB.state.getIgnoreInvalidTriggers()) {
                 throw new IllegalStateException(
-                        String.format("cannot use trigger '%s' in state '%s'", trgr, State.fullName(currSB.state))
+                        String.format("cannot use trigger '%s' in state '%s'", trigger, State.fullName(currSB.state))
                 );
             }
             return false;
         }
-        return executeTransition(trgr, transition, args);
+        return executeTransition(trigger, transition, args);
     }
 
-    private boolean executeTransition(T trgr, Transition<T> transition, Map<String, Object> args) {
+    private boolean executeTransition(T trigger, Transition<T> transition, Map<String, Object> args) {
         StateBundle<T> dst = transition.resolveDst(currSB);
 
         // Prepare event object.
         if (args == null) {
             args = Map.of();
         }
-        Event<S, T> event = new Event<>(this, currSB.state, dst.state, trgr, args);
+        Event<S, T> event = new Event<>(this, currSB.state, dst.state, trigger, args);
 
         // Callbacks.
         if (!beforeAll(event)) {
@@ -932,9 +1092,9 @@ public final class FSM<S, T> {
 
     private static void chainOnExitCallbacks(State state, Event event) {
         if (state != null) {
-            // Call the ancestors' callbacks first, as per specification.
-            chainOnExitCallbacks(state.getParent(), event);
+            // Call the ancestors' callbacks second, as per specification.
             state.onExit(event);
+            chainOnExitCallbacks(state.getParent(), event);
         }
     }
 

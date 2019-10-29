@@ -1,7 +1,5 @@
 package frc.team7170.lib.fsm2;
 
-// TODO: rename ignoreMistrigger to ignoreInvalidTrigger
-
 import java.util.Objects;
 
 /**
