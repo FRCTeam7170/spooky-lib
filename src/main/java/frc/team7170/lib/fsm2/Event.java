@@ -2,18 +2,19 @@ package frc.team7170.lib.fsm2;
 
 import java.util.Map;
 
+// TODO: add fields for S-typed version of src and dst?
+
 /**
- * {@code Event} represents the immutable context for a transition/state change in a
- * {@link FiniteStateMachine FiniteStateMachine}.
+ * {@code Event} represents the immutable context for a transition/state change in a {@link FSM FSM}.
  *
  * @author Robert Russell
  */
-public final class Event {
+public final class Event<S, T> {
 
     /**
-     * The {@link FiniteStateMachine FiniteStatemachine} in which the transition/state change occurred.
+     * The {@link FSM FSM} in which the transition/state change occurred.
      */
-    public final FiniteStateMachine machine;
+    public final FSM<S, T> machine;
 
     /**
      * The src (source) {@linkplain State state} (i.e. the state being transitioned from). The src and dst (destination)
@@ -28,37 +29,35 @@ public final class Event {
     public final State dst;
 
     /**
-     * The {@linkplain Transition transition} that is occurring. If the state change was forced (i.e. via one of the
-     * {@code forceTo} methods on a {@link FiniteStateMachine FiniteStateMachine}), then this is {@code null}.
-     */
-    public final Transition transition;
-
-    /**
      * The trigger that caused the state change. If the state change was forced (i.e. via one of the {@code forceTo}
-     * methods on a {@link FiniteStateMachine FiniteStateMachine}), then this is {@code null}.
+     * methods on a {@link FSM FSM}), then this is {@code null}.
      */
-    public final String trigger;
+    public final T trigger;
 
     /**
-     * The arguments passed to the call of {@code trigger} or {@code forceTo} (on a
-     * {@link FiniteStateMachine FiniteStateMachine}) that caused the state change.
+     * <p>
+     * The arguments passed to the call of {@code trigger} or {@code forceTo} (on a {@link FSM FSM}) that caused the
+     * state change.
+     * </p>
+     * <p>
      * This map is guaranteed to be non-null and, unless {@code trigger}/{@code forceTo} was invoked with an immutable
      * map, mutable.
-     * Moreover, since the same {@code Event} object is passed to every callback in the callback chain for a state
-     * change, changes to this map in one callback will be visible to other callbacks.
+     * </p>
+     * <p>
+     * Since the same {@code Event} object is passed to every callback in the callback chain for a state change, changes
+     * to this map in one callback will be visible to other callbacks.
+     * </p>
      */
     public final Map<String, Object> args;
 
-    Event(FiniteStateMachine machine,
+    Event(FSM<S, T> machine,
           State src,
           State dst,
-          Transition transition,
-          String trigger,
+          T trigger,
           Map<String, Object> args) {
         this.machine = machine;
         this.src = src;
         this.dst = dst;
-        this.transition = transition;
         this.trigger = trigger;
         this.args = args;
     }
