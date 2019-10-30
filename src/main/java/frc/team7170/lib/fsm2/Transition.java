@@ -5,7 +5,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 // TODO: comment in FSM class where Transition does null checks for us.
-// TODO: protect against calling methods after build called?
 
 /**
  * {@code Transition} is used internally to represent a state transition on a {@link FSM FSM}.

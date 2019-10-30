@@ -5,21 +5,19 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-// TODO: thread safety
 // TODO: logging
-// TODO: document transition resolution
-// TODO: if a trigger occurs while a state change is in progress, queue it
 
 /**
  * TODO: mention:
- *  based loosly on pytransitions
+ *  based loosely on pytransitions
  *  complex build procedure
  *  transition resolution rules and performance
  *  state naming?
  *  types of transitions?
  *  callback order (onEnter/onExit callback invocation is naive (e.g. "A/B" -> "A/C" calls onExit and onEnter for "A"))
  *  example usage
- *
+ *  advantages to using this class over hand-coded state machine
+ *  not thread safe
  *
  * @author Robert Russell
  */
@@ -739,6 +737,16 @@ public final class FSM<S, T> {
     private final StateMap<S, T> stateMap;
     private StateBundle<T> currSB;
 
+    /**
+     * {@code stateChanging} is true if a state change/transition is in process; false otherwise.
+     */
+    private boolean stateChanging = false;
+
+    /**
+     * {@code queue} is queue of forceTo/trigger calls made from callbacks.
+     */
+    private final Deque<Runnable> queue = new ArrayDeque<>();
+
     private FSM(Builder<S, T, ?> builder, StateBundle<T> initial) {
         ignoreInvalidTriggers = builder.ignoreInvalidTriggers;
         beforeAll = builder.beforeAll;
@@ -829,6 +837,28 @@ public final class FSM<S, T> {
      * </ol>
      * </p>
      * <p>
+     * If any callback activates a trigger (i.e. calls {@code trigger}) or forces the {@code FSM} into a new state
+     * (i.e. calls {@code forceTo}), that action is <em>queued</em>. That is, the action will not start until the
+     * current transition/state change completes. For example, if one calls {@code fsm.forceTo(S)} (where "S" is some
+     * state) inside a callback that was invoked as result of trigger "T", the order of events will roughly be as
+     * follows:
+     * <ol>
+     *     <li>{@code fsm.trigger(T)} invoked</li>
+     *     <li>start of trigger "T"</li>
+     *     <li>callbacks from trigger "T", one of which calls {@code fsm.forceTo(S)} (which, in turn, queues that action
+     *     and returns immediately)</li>
+     *     <li>end of trigger "T"</li>
+     *     <li>start of forced state change to "S"</li>
+     *     <li>callbacks from forced state change to "S"</li>
+     *     <li>end of forced state change to "S"</li>
+     *     <li>{@code fsm.trigger(T)} returns</li>
+     * </ol>
+     * </p>
+     * <p>
+     * Any exceptions thrown inside a queued transition/state change will be propagated to the invocation of
+     * {@code trigger}/{@code forceTo} that is not inside any callback.
+     * </p>
+     * <p>
      * {@code forceTo} is a no-op if the given state is the current state.
      * </p>
      *
@@ -884,6 +914,28 @@ public final class FSM<S, T> {
      * </ol>
      * </p>
      * <p>
+     * If any callback activates a trigger (i.e. calls {@code trigger}) or forces the {@code FSM} into a new state
+     * (i.e. calls {@code forceTo}), that action is <em>queued</em>. That is, the action will not start until the
+     * current transition/state change completes. For example, if one calls {@code fsm.forceTo(S)} (where "S" is some
+     * state) inside a callback that was invoked as result of trigger "T", the order of events will roughly be as
+     * follows:
+     * <ol>
+     *     <li>{@code fsm.trigger(T)} invoked</li>
+     *     <li>start of trigger "T"</li>
+     *     <li>callbacks from trigger "T", one of which calls {@code fsm.forceTo(S)} (which, in turn, queues that action
+     *     and returns immediately)</li>
+     *     <li>end of trigger "T"</li>
+     *     <li>start of forced state change to "S"</li>
+     *     <li>callbacks from forced state change to "S"</li>
+     *     <li>end of forced state change to "S"</li>
+     *     <li>{@code fsm.trigger(T)} returns</li>
+     * </ol>
+     * </p>
+     * <p>
+     * Any exceptions thrown inside a queued transition/state change will be propagated to the invocation of
+     * {@code trigger}/{@code forceTo} that is not inside any callback.
+     * </p>
+     * <p>
      * {@code forceTo} is a no-op if the given state is the current state.
      * </p>
      *
@@ -900,13 +952,30 @@ public final class FSM<S, T> {
         if (sb == null) {
             throw new IllegalArgumentException("state does not belong to this FSM");
         }
+        if (!sb.state.isAccessible()) {
+            throw new IllegalArgumentException("cannot enter inaccessible state");
+        }
+
+        // If a transition/state change is currently in progress, queue the forceTo request.
+        // Otherwise, do it immediately.
+        if (stateChanging) {
+            queue.addLast(() -> forceToUnqueued(sb, args));
+        } else {
+            forceToUnqueued(sb, args);
+        }
+    }
+
+    private void forceToUnqueued(StateBundle<T> sb, Map<String, Object> args) {
+        // "Lock" the FSM.
+        assert !stateChanging;
+        stateChanging = true;
+
         if (sb == currSB) {
             // no-op if the FSM is already in the given state.
             return;
         }
-        if (!sb.state.isAccessible()) {
-            throw new IllegalArgumentException("cannot enter inaccessible state");
-        }
+
+        // Prepare event object.
         if (args == null) {
             args = Map.of();
         }
@@ -924,6 +993,11 @@ public final class FSM<S, T> {
         currSB = sb;
         chainOnEnterCallbacks(sb.state, event);
         afterAll(event);
+
+        // "Unlock" the FSM.
+        stateChanging = false;
+
+        emptyQueue();
     }
 
     /**
@@ -973,17 +1047,41 @@ public final class FSM<S, T> {
      *     <li>the {@code FSM}'s after all callbacks in the order they were added.</li>
      * </ol>
      * </p>
+     * <p>
+     * If any callback activates a trigger (i.e. calls {@code trigger}) or forces the {@code FSM} into a new state
+     * (i.e. calls {@code forceTo}), that action is <em>queued</em>. That is, the action will not start until the
+     * current transition/state change completes. For example, if one calls {@code fsm.forceTo(S)} (where "S" is some
+     * state) inside a callback that was invoked as result of trigger "T", the order of events will roughly be as
+     * follows:
+     * <ol>
+     *     <li>{@code fsm.trigger(T)} invoked</li>
+     *     <li>start of trigger "T"</li>
+     *     <li>callbacks from trigger "T", one of which calls {@code fsm.forceTo(S)} (which, in turn, queues that action
+     *     and returns immediately)</li>
+     *     <li>end of trigger "T"</li>
+     *     <li>start of forced state change to "S"</li>
+     *     <li>callbacks from forced state change to "S"</li>
+     *     <li>end of forced state change to "S"</li>
+     *     <li>{@code fsm.trigger(T)} returns</li>
+     * </ol>
+     * </p>
+     * <p>
+     * A corollary to the previous point is that the result of invocations of {@code trigger} inside callbacks cannot be
+     * determined when {@code trigger} is invoked; as such, <strong>{@code trigger} always returns true when called from
+     * inside a callback</strong>. Moreover, any exceptions thrown inside a queued transition/state change will be
+     * propagated to the invocation of {@code trigger}/{@code forceTo} that is not inside any callback.
+     * </p>
      *
      * @param trigger the trigger.
-     * @return whether or not a transition executed to completion.
+     * @return whether or not a transition executed to completion, or true if the trigger was queued.
      * @throws NullPointerException if the given trigger is {@code null}.
      * @throws IllegalStateException if the given trigger is invalid and invalid triggers are not ignored in the current
      * state.
      */
     public boolean trigger(T trigger) {
         return trigger(trigger, Map.of());
-    }
 
+    }
     /**
      * <p>
      * Activate the given trigger.
@@ -1031,19 +1129,56 @@ public final class FSM<S, T> {
      *     <li>the {@code FSM}'s after all callbacks in the order they were added.</li>
      * </ol>
      * </p>
+     * <p>
+     * If any callback activates a trigger (i.e. calls {@code trigger}) or forces the {@code FSM} into a new state
+     * (i.e. calls {@code forceTo}), that action is <em>queued</em>. That is, the action will not start until the
+     * current transition/state change completes. For example, if one calls {@code fsm.forceTo(S)} (where "S" is some
+     * state) inside a callback that was invoked as result of trigger "T", the order of events will roughly be as
+     * follows:
+     * <ol>
+     *     <li>{@code fsm.trigger(T)} invoked</li>
+     *     <li>start of trigger "T"</li>
+     *     <li>callbacks from trigger "T", one of which calls {@code fsm.forceTo(S)} (which, in turn, queues that action
+     *     and returns immediately)</li>
+     *     <li>end of trigger "T"</li>
+     *     <li>start of forced state change to "S"</li>
+     *     <li>callbacks from forced state change to "S"</li>
+     *     <li>end of forced state change to "S"</li>
+     *     <li>{@code fsm.trigger(T)} returns</li>
+     * </ol>
+     * </p>
+     * <p>
+     * A corollary to the previous point is that the result of invocations of {@code trigger} inside callbacks cannot be
+     * determined when {@code trigger} is invoked; as such, <strong>{@code trigger} always returns true when called from
+     * inside a callback</strong>. Moreover, any exceptions thrown inside a queued transition/state change will be
+     * propagated to the invocation of {@code trigger}/{@code forceTo} that is not inside any callback.
+     * </p>
      *
      * @param trigger the trigger.
      * @param args arguments to put in the {@link Event Event} object so that they might be accessed from callbacks.
-     * @return whether or not a transition executed to completion.
+     * @return whether or not a transition executed to completion, or true if the trigger was queued.
      * @throws NullPointerException if the given trigger is {@code null}.
      * @throws IllegalStateException if the given trigger is invalid and invalid triggers are not ignored in the current
      * state.
      */
     public boolean trigger(T trigger, Map<String, Object> args) {
-        Transition<T> transition = currSB.resolveTransition(
-                Objects.requireNonNull(trigger, "trigger must be non-null")
-        );
+        Objects.requireNonNull(trigger, "trigger must be non-null");
+        if (stateChanging) {
+            queue.addLast(() -> triggerUnqueued(trigger, args));
+            return true;
+        }
+        return triggerUnqueued(trigger, args);
+    }
+
+    private boolean triggerUnqueued(T trigger, Map<String, Object> args) {
+        // "Lock" the FSM.
+        assert !stateChanging;
+        stateChanging = true;
+
+        // Resolve the transition.
+        Transition<T> transition = currSB.resolveTransition(trigger);
         if (transition == null) {
+            // I.e. if the trigger is invalid...
             if (!ignoreInvalidTriggers && !currSB.state.getIgnoreInvalidTriggers()) {
                 throw new IllegalStateException(
                         String.format("cannot use trigger '%s' in state '%s'", trigger, State.fullName(currSB.state))
@@ -1051,10 +1186,8 @@ public final class FSM<S, T> {
             }
             return false;
         }
-        return executeTransition(trigger, transition, args);
-    }
 
-    private boolean executeTransition(T trigger, Transition<T> transition, Map<String, Object> args) {
+        // Resolve the destination state.
         StateBundle<T> dst = transition.resolveDst(currSB);
 
         // Prepare event object.
@@ -1077,7 +1210,21 @@ public final class FSM<S, T> {
         }
         transition.after(event);
         afterAll(event);
+
+        // "Unlock" the FSM.
+        stateChanging = false;
+
+        emptyQueue();
+
         return true;
+    }
+
+    private void emptyQueue() {
+        // This works recursively since the Runnable will ultimately call emptyQueue again.
+        Runnable r = queue.pollFirst();
+        if (r != null) {
+            r.run();
+        }
     }
 
     private boolean beforeAll(Event event) {
