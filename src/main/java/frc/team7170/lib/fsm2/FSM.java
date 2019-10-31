@@ -780,6 +780,7 @@ public final class FSM<S, T> {
      * @param states an array of all the states for the FSM.
      * @return a builder for an {@code FSM} in which the states and triggers are represented by strings.
      * @throws NullPointerException if the given string array or any contained string is {@code null}.
+     * @throws IllegalArgumentException if the given string array is empty.
      */
     public static BuilderFromStrings<String> builder(String... states) {
         return new BuilderFromStrings<>(
@@ -809,6 +810,7 @@ public final class FSM<S, T> {
      * represented by enum constants.
      * @throws NullPointerException if the given trigger enum class is {@code null}.
      * @throws NullPointerException if the given string array or any contained string is {@code null}.
+     * @throws IllegalArgumentException if the given string array is empty.
      */
     public static <T extends Enum<T>> BuilderFromStrings<T> builder(Class<T> triggerEnum, String... states) {
         Objects.requireNonNull(triggerEnum, "triggerEnum must be non-null");
@@ -828,6 +830,7 @@ public final class FSM<S, T> {
      * @return a builder for an {@code FSM} in which the states are represented by constants in the given enum
      * implementing the {@code State} interface and the triggers are represented by strings.
      * @throws NullPointerException if the given state enum class is {@code null}.
+     * @throws IllegalArgumentException if the given state enum has zero constants.
      */
     public static <S extends Enum<S> & State> BuilderFromEnum<S, String> builder(Class<S> stateEnum) {
         return new BuilderFromEnum<>(
@@ -849,6 +852,8 @@ public final class FSM<S, T> {
      * implementing the {@code State} interface and the triggers are represented by constants in the other given enum.
      * @throws NullPointerException if the given trigger enum class is {@code null}.
      * @throws NullPointerException if the given state enum class is {@code null}.
+     * @throws IllegalArgumentException if the given trigger enum has zero constants.
+     * @throws IllegalArgumentException if the given state enum has zero constants.
      */
     public static <S extends Enum<S> & State, T extends Enum<T>> BuilderFromEnum<S, T> builder(
             Class<T> triggerEnum, Class<S> stateEnum
