@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-// TODO: comment in FSM class where Transition does null checks for us.
-
 /**
  * {@code Transition} is used internally to represent a state transition on a {@link FSM FSM}.
  *

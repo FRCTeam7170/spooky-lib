@@ -8,16 +8,145 @@ import java.util.stream.Collectors;
 // TODO: logging
 
 /**
- * TODO: mention:
- *  based loosely on pytransitions
- *  complex build procedure
- *  transition resolution rules and performance
- *  state naming?
- *  types of transitions?
- *  callback order (onEnter/onExit callback invocation is naive (e.g. "A/B" -> "A/C" calls onExit and onEnter for "A"))
- *  example usage
- *  advantages to using this class over hand-coded state machine
- *  not thread safe
+ * <p>
+ * {@code FSM} is a general-purpose, finite state machine implementation. {@code FSM}s are constructed using a builder
+ * and builders can be attained via the static methods named "{@code builder}".
+ * </p>
+ * <p>
+ * {@code FSM}s are not thread-safe by default, thought they can be made thread-safe by externally synchronizing access
+ * to all exposed (public) methods.
+ * </p>
+ * <p>
+ * This class is loosely based on <a href="https://github.com/pytransitions/transitions">pytransitions</a>.
+ * </p>
+ *
+ * <h2>Definitions/Concepts</h2>
+ * <p>
+ * {@code FSM}s have three main concepts:
+ * <dl>
+ *     <dt><strong>State</strong></dt>
+ *     <dd>
+ *         A state the {@code FSM} can assume. States are hierarchical in that a state may or may not have a single
+ *         parent state. A <em>top-level</em> state is one with no parent. An {@code FSM} is considered <em>in</em> any
+ *         given state if the {@code FSM}'s current state is equal to the given state or is a descendent of the given
+ *         state.
+ *         <br />Properties of states:
+ *         <dl>
+ *             <dt><strong>Name</strong></dt>
+ *             <dd>
+ *                 Every state has a name containing no slashes ({@value #SUB_STATE_SEP}). A state's "full name" is a
+ *                 file path-like name consisting of its ancestors' names delimited by {@value #SUB_STATE_SEP} (e.g. the
+ *                 full name "a/b" refers to a state named "b" with a top-level state named "a" as its parent).
+ *             </dd>
+ *
+ *             <dt><strong>Accessibility</strong></dt>
+ *             <dd>
+ *                 Whether or not the state can be directly entered/assumed by its associated {@code FSM}. (Note an
+ *                 {@code FSM} can still be considered in a given inaccessible state if the {@code FSM}'s current state
+ *                 is an accessible descendent of the given state.)
+ *             </dd>
+ *
+ *             <dt><strong>Ignore invalid triggers</strong></dt>
+ *             <dd>
+ *                 Whether or not to ignore invalid triggers while the state is the current state in the {@code FSM}.
+ *                 (See below for definition of "invalid trigger".)
+ *             </dd>
+ *         </dl>
+ *     </dd>
+ *
+ *     <dt><strong>Transition</strong></dt>
+ *     <dd>
+ *         A predefined mapping from one state (the "source" state) to another state (the "destination" state) that
+ *         occurs as a result of a trigger. Two special types of transitions exist: (1) a <em>reflexive</em> transition
+ *         is a transition in which the source and destination states are identical and (2) an <em>internal</em>
+ *         transition is a transition in which the {@code FSM} undergoes no actual state change. (These special variants
+ *         are only useful for their side effects, which are explained below.)
+ *     </dd>
+ *
+ *     <dt><strong>Trigger</strong></dt>
+ *     <dd>
+ *         An external "stimulus" that activates a transition. A given trigger is considered <em>invalid</em> if no
+ *         transition whose associated trigger is the given trigger and whose source state is the current state of the
+ *         {@code FSM} exists. Invalid triggers either result in runtime exceptions, or can be ignored across the entire
+ *         {@code FSM} or on a state-by-state basis.
+ *     </dd>
+ * </dl>
+ * </p>
+ *
+ * <h2>State and Trigger Types</h2>
+ * <p>
+ * There are, roughly speaking, four different types of {@code FSM}s that can be created:
+ * <ul>
+ *     <li>one which uses strings to represent states and strings to represent triggers;</li>
+ *     <li>one which uses strings to represent states and enum constants to represent triggers;</li>
+ *     <li>one which uses enum constants to represent states and strings to represent triggers; and</li>
+ *     <li>one which uses enum constants to represent states and enum constants to represent triggers</li>
+ * </ul>
+ * Note that when using enum constants to represent states, the enum must implement {@link State State}, while an enum
+ * used to represent triggers can be any enum.
+ * </p>
+ * <p>
+ * The main difference between using strings or enum constants to represent states and triggers are (a) convenience,
+ * (b) compile-time safety, and (c) performance:
+ * <ul>
+ *     <li>strings are arguably more convenient;</li>
+ *     <li>enum constants are compile-time safe and strings are not (i.e. you could use an arbitrary string as a
+ *     state/trigger, even if it is not one, resulting in a runtime exception);</li>
+ *     <li>using enum constants is slightly more performant (although transition resolution and state resolution happens
+ *     in constant time (with respect to number of transitions and states) in either case).</li>
+ * </ul>
+ * </p>
+ *
+ * <h2>Callbacks</h2>
+ * <p>
+ * User code can be registered to be called when ever a particular state is entered and/or exited, before and/or after a
+ * particular transitions occurs, and/or before and/or after each state change occurs. Callbacks can optionally be
+ * passed an {@link Event Event} object, which contains context for the transition/state change. Moreover, certain
+ * callbacks can be used to implement condition transitions (i.e. transitions which are aborted unless a certain
+ * condition holds). See {@linkplain #trigger(Object, Map) here} for the order in which callbacks are called during for
+ * a transition and see {@linkplain #forceTo(Object, Map) here} for the order in which callbacks are called during a
+ * forced state change.
+ * </p>
+ *
+ * <h2>Advantages of using {@code FSM} to a "hand-coded" state machine:</h2>
+ * <ul>
+ *     <li>the declarative builder syntax effectively concisely documents the state machine's states and
+ *     transitions</li>
+ *     <li>having to explicitly define and give names to all the states and transitions reduces the chance of error</li>
+ *     <li>all the relatively uninteresting logic guaranteeing valid transitions is handled internally</li>
+ *     <li>this state machine implementation is already tested</li>
+ * </ul>
+ *
+ * <h2>Basic Example Usage</h2>
+ * <pre>{@code FSM<String, String> fsm = FSM.builder("solid", "liquid", "gas")
+ *     .onEnter("solid", () -> System.out.println("in solid"))
+ *     .onEnter("liquid", () -> System.out.println("in liquid"))
+ *     .onEnter("gas", () -> System.out.println("in gas"))
+ *     .transition("melt", "solid", "liquid").before(() -> System.out.println("melted")).build()
+ *     .transition("evaporate", "liquid", "gas").before(() -> System.out.println("evaporated")).build()
+ *     .transition("condense", "gas", "liquid").before(() -> System.out.println("condensed")).build()
+ *     .transition("freeze", "liquid", "solid").before(() -> System.out.println("froze")).build()
+ *     .build("solid");  // "solid" is the initial state.
+ * fsm.trigger("melt");
+ * // fsm.trigger("condense");  // Invalid trigger!
+ * fsm.trigger("evaporate");
+ * fsm.forceTo("solid");
+ * // Output:
+ * // melted
+ * // in liquid
+ * // evaporated
+ * // in gas
+ * // in solid
+ * }</pre>
+ *
+ * @apiNote The instantiation procedure for {@code FSM}s is as complicated as it is in order to facilitate the
+ * "psuedo-immutable" property of {@code FSM}s (i.e. once an {@code FSM} is constructed, no new states or transitions
+ * can be added and no existing states or transitions can be removed). The complex build procedure is also desirable
+ * because it allows the user to define an entire state machine in one statement, which is nice for documentation
+ * purposes.
+ *
+ * @param <S> the state type.
+ * @param <T> the trigger type.
  *
  * @author Robert Russell
  */
