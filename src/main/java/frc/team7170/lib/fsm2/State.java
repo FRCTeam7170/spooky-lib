@@ -91,14 +91,18 @@ public interface State {
      */
     static String fullName(State state) {
         StringBuilder sb = new StringBuilder();
-        sb.append(Objects.requireNonNull(state, "state must be non-null").name());
-        state = state.getParent();
-        while (state != null) {
-            sb.append(FSM.SUB_STATE_SEP);
-            sb.append(state.name());
-            state = state.getParent();
-        }
+        fullNameR(sb, Objects.requireNonNull(state, "state must be non-null"), false);
         return sb.toString();
+    }
+
+    private static void fullNameR(StringBuilder sb, State state, boolean sep) {
+        if (state != null) {
+            fullNameR(sb, state.getParent(), true);
+            sb.append(state.name());
+            if (sep) {
+                sb.append(FSM.SUB_STATE_SEP);
+            }
+        }
     }
 
     /**
