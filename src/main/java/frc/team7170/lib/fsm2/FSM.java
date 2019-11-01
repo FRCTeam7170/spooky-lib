@@ -855,7 +855,6 @@ public final class FSM<S, T> {
      * implementing the {@code State} interface and the triggers are represented by constants in the other given enum.
      * @throws NullPointerException if the given trigger enum class is {@code null}.
      * @throws NullPointerException if the given state enum class is {@code null}.
-     * @throws IllegalArgumentException if the given trigger enum has zero constants.
      * @throws IllegalArgumentException if the given state enum has zero constants.
      */
     public static <S extends Enum<S> & State, T extends Enum<T>> BuilderFromEnum<S, T> builder(
