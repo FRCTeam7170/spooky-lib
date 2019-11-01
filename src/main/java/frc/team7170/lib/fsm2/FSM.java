@@ -394,7 +394,7 @@ public final class FSM<S, T> {
          */
         private StateBundle<T> requireAccessible(StateBundle<T> sb) {
             if (!sb.state.isAccessible()) {
-                throw new IllegalArgumentException("state in transition must be accessible");
+                throw new IllegalArgumentException("state must be accessible");
             }
             return sb;
         }
@@ -572,6 +572,7 @@ public final class FSM<S, T> {
          * @return the newly-constructed {@code FSM}.
          * @throws NullPointerException if the given initial state is {@code null}.
          * @throws IllegalArgumentException if the given initial state does not belong to the FSM being built.
+         * @throws IllegalArgumentException if the given initial state is not {@link State#isAccessible() accessible}.
          * @throws IllegalStateException if {@code build} has already been called.
          */
         public FSM<S, T> build(S initial) {
@@ -579,7 +580,9 @@ public final class FSM<S, T> {
             built = true;
             return new FSM<>(
                     this,
-                    resolveState(Objects.requireNonNull(initial, "initial state must be non-null")
+                    requireAccessible(resolveState(
+                            Objects.requireNonNull(initial, "initial state must be non-null")
+                    )
             ));
         }
 
