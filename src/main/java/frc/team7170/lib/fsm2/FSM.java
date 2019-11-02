@@ -24,34 +24,22 @@ import java.util.stream.Collectors;
  * <p>
  * {@code FSM}s have three main concepts:
  * <dl>
- *     <dt><strong>State</strong></dt>
+ *     <dt><strong>{@linkplain State State}</strong></dt>
  *     <dd>
  *         A state the {@code FSM} can assume. States are hierarchical in that a state may or may not have a single
- *         parent state. A <em>top-level</em> state is one with no parent. An {@code FSM} is considered <em>in</em> any
- *         given state if the {@code FSM}'s current state is equal to the given state or is a descendent of the given
- *         state.
- *         <br />Properties of states:
- *         <dl>
- *             <dt><strong>Name</strong></dt>
- *             <dd>
- *                 Every state has a name containing no slashes ({@value #SUB_STATE_SEP}). A state's "full name" is a
- *                 file path-like name consisting of its ancestors' names delimited by {@value #SUB_STATE_SEP} (e.g. the
- *                 full name "a/b" refers to a state named "b" with a top-level state named "a" as its parent).
- *             </dd>
- *
- *             <dt><strong>Accessibility</strong></dt>
- *             <dd>
- *                 Whether or not the state can be directly entered/assumed by its associated {@code FSM}. (Note an
- *                 {@code FSM} can still be considered in a given inaccessible state if the {@code FSM}'s current state
- *                 is an accessible descendent of the given state.)
- *             </dd>
- *
- *             <dt><strong>Ignore invalid triggers</strong></dt>
- *             <dd>
- *                 Whether or not to ignore invalid triggers while the state is the current state in the {@code FSM}.
- *                 (See below for definition of "invalid trigger".)
- *             </dd>
- *         </dl>
+ *         {@linkplain State#getParent() parent state}. A <em>top-level</em> state is one with no parent. An {@code FSM}
+ *         is considered <em>{@link #in(Object) in}</em> any given state if the {@code FSM}'s current state is equal to
+ *         the given state or is a descendent of the given state. Every state has a {@linkplain State#name() name}
+ *         containing no slashes ({@value #SUB_STATE_SEP}). A state's
+ *         <em>{@linkplain State#fullName(State) full name}</em> is a file path-like name consisting of its ancestors'
+ *         names delimited by {@value #SUB_STATE_SEP} (e.g. the full name "a/b" refers to a state named "b" with a
+ *         top-level state named "a" as its parent). A state's <em>{@linkplain State#isAccessible() accessibility}</em>
+ *         refers to whether or not the state can be directly entered/assumed by its associated {@code FSM}. (Note an
+ *         {@code FSM} can still be considered in a given inaccessible state if the {@code FSM}'s current state is an
+ *         accessible descendent of the given state.) A given state may be set to
+ *         <em>{@linkplain State#getIgnoreInvalidTriggers() ignore invalid triggers}</em>, meaning the {@code FSM} will
+ *         ignore invalid triggers while the given state is the current state (see below for definition of "invalid
+ *         trigger").
  *     </dd>
  *
  *     <dt><strong>Transition</strong></dt>
@@ -86,7 +74,7 @@ import java.util.stream.Collectors;
  * used to represent triggers can be any enum.
  * </p>
  * <p>
- * The main difference between using strings or enum constants to represent states and triggers are (a) convenience,
+ * The main differences between using strings or enum constants to represent states and triggers are (a) convenience,
  * (b) compile-time safety, and (c) performance:
  * <ul>
  *     <li>strings are arguably more convenient;</li>
@@ -103,7 +91,7 @@ import java.util.stream.Collectors;
  * particular transitions occurs, and/or before and/or after each state change occurs. Callbacks can optionally be
  * passed an {@link Event Event} object, which contains context for the transition/state change. Moreover, certain
  * callbacks can be used to implement condition transitions (i.e. transitions which are aborted unless a certain
- * condition holds). See {@linkplain #trigger(Object, Map) here} for the order in which callbacks are called during for
+ * condition holds). See {@linkplain #trigger(Object, Map) here} for the order in which callbacks are called during
  * a transition and see {@linkplain #forceTo(Object, Map) here} for the order in which callbacks are called during a
  * forced state change.
  * </p>
@@ -128,7 +116,7 @@ import java.util.stream.Collectors;
  *     .transition("freeze", "liquid", "solid").before(() -> System.out.println("froze")).build()
  *     .build("solid");  // "solid" is the initial state.
  * fsm.trigger("melt");
- * // fsm.trigger("condense");  // Invalid trigger!
+ * // fsm.trigger("condense");  // Invalid trigger! Not in gas state.
  * fsm.trigger("evaporate");
  * fsm.forceTo("solid");
  * // Output:
@@ -1216,8 +1204,8 @@ public final class FSM<S, T> {
      */
     public boolean trigger(T trigger) {
         return trigger(trigger, Map.of());
-
     }
+
     /**
      * <p>
      * Activate the given trigger.
