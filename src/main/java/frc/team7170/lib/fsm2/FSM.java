@@ -772,6 +772,7 @@ public final class FSM<S, T> {
      * @return a builder for an {@code FSM} in which the states and triggers are represented by strings.
      * @throws NullPointerException if the given string array or any contained string is {@code null}.
      * @throws IllegalArgumentException if the given string array is empty.
+     * @throws IllegalArgumentException if the given string array contains duplicate elements.
      */
     public static BuilderFromStrings<String> builder(String... states) {
         return new BuilderFromStrings<>(
@@ -802,6 +803,7 @@ public final class FSM<S, T> {
      * @throws NullPointerException if the given trigger enum class is {@code null}.
      * @throws NullPointerException if the given string array or any contained string is {@code null}.
      * @throws IllegalArgumentException if the given string array is empty.
+     * @throws IllegalArgumentException if the given string array contains duplicate elements.
      */
     public static <T extends Enum<T>> BuilderFromStrings<T> builder(Class<T> triggerEnum, String... states) {
         Objects.requireNonNull(triggerEnum, "triggerEnum must be non-null");
