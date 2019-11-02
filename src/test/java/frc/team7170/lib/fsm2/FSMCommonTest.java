@@ -53,7 +53,7 @@ public class FSMCommonTest {
     // -----------
 
     @Test
-    void getStateObj_defaultSimpleStateProperties_str() {
+    void getStateObj_defaultSimpleStateProperties_strStates() {
         FSM<String, String> m = FSM.builder("A").build("A");
         assertThat(m.getStateObj().name(), is("A"));
         assertThat(m.getStateObj().getParent(), nullValue());
@@ -62,7 +62,7 @@ public class FSMCommonTest {
     }
 
     @Test
-    void getStateObj_defaultNestedStateProperties_str() {
+    void getStateObj_defaultNestedStateProperties_strStates() {
         FSM<String, String> m = FSM.builder("A/B").build("A/B");
         assertThat(m.getStateObj().name(), is("B"));
         assertThat(m.getStateObj().isAccessible(), is(true));
@@ -74,7 +74,7 @@ public class FSMCommonTest {
     }
 
     @Test
-    void getStateObj_equality_enum() {
+    void getStateObj_equality_enumStates() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertThat(m.getStateObj(), is(SE.B));
     }
@@ -84,13 +84,13 @@ public class FSMCommonTest {
     // --------
 
     @Test
-    void getState_initial_str() {
+    void getState_initial_strStates() {
         FSM<String, String> m = FSM.builder("A").build("A");
         assertThat(m.getState(), is("A"));
     }
 
     @Test
-    void getState_initial_enum() {
+    void getState_initial_enumStates() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertThat(m.getState(), is(SE.B));
     }
@@ -100,7 +100,7 @@ public class FSMCommonTest {
     // --
 
     @Test
-    void in_initial_str() {
+    void in_initial_strStates() {
         FSM<String, String> m = FSM.builder(SS).build("A/B");
         assertAll(
                 () -> assertThat(m.in("A/B"), is(true)),
@@ -110,7 +110,7 @@ public class FSMCommonTest {
     }
 
     @Test
-    void in_initial_enum() {
+    void in_initial_enumStates() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertAll(
                 () -> assertThat(m.in(SE.B), is(true)),
@@ -126,7 +126,7 @@ public class FSMCommonTest {
     }
 
     @Test
-    void in_unknownState_str() {
+    void in_unknownState_strStates() {
         FSM<String, String> m = FSM.builder("A").build("A");
         assertThrows(IllegalArgumentException.class, () -> m.in("B"));
     }
@@ -136,14 +136,14 @@ public class FSMCommonTest {
     // -------
 
     @Test
-    void forceTo_valid_str() {
+    void forceTo_valid_strStates() {
         FSM<String, String> m = FSM.builder(SS).build("A/B");
         m.forceTo("A/B/C");
         assertThat(m.getState(), is("A/B/C"));
     }
 
     @Test
-    void forceTo_valid_enum() {
+    void forceTo_valid_enumStates() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         m.forceTo(SE.C);
         assertThat(m.getState(), is(SE.C));
@@ -160,32 +160,32 @@ public class FSMCommonTest {
     }
 
     @Test
-    void forceTo_unknownState_str() {
+    void forceTo_unknownState_strStates() {
         FSM<String, String> m = FSM.builder("A").build("A");
         assertThrows(IllegalArgumentException.class, () -> m.forceTo("X"));
     }
 
     @Test
-    void forceTo_inaccessibleState_str() {
+    void forceTo_inaccessibleState_strStates() {
         FSM<String, String> m = FSM.builder(SS).build("A/B");
         assertThrows(IllegalArgumentException.class, () -> m.forceTo("A"));
     }
 
     @Test
-    void forceTo_inaccessibleState_enum() {
+    void forceTo_inaccessibleState_enumStates() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertThrows(IllegalArgumentException.class, () -> m.forceTo(SE.A));
     }
 
     @Test
-    void forceTo_currState_str() {
+    void forceTo_currState_strStates() {
         FSM<String, String> m = FSM.builder(SS).build("A/B");
         m.forceTo("A/B");
         assertThat(m.getState(), is("A/B"));
     }
 
     @Test
-    void forceTo_currState_enum() {
+    void forceTo_currState_enumStates() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         m.forceTo(SE.B);
         assertThat(m.getState(), is(SE.B));

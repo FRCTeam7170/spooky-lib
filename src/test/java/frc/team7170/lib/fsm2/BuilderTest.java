@@ -25,17 +25,17 @@ public class BuilderTest {
     private static final String[] SS = {"A/B", "A/B/C"};
 
     @Test
-    void construction_noStates_str() {
+    void construction_noStates_strStates() {
         assertThrows(IllegalArgumentException.class, FSM::builder);
     }
 
     @Test
-    void construction_nullState_str() {
+    void construction_nullState_strStates() {
         assertThrows(NullPointerException.class, () -> FSM.builder("a", null, "c"));
     }
 
     @Test
-    void construction_noStates_enum() {
+    void construction_noStates_enumStates() {
         assertThrows(IllegalArgumentException.class, () -> FSM.builder(S0.class));
     }
 
@@ -50,7 +50,7 @@ public class BuilderTest {
                 () -> assertNPE(FSM::builder, S1.class),
                 () -> assertNPE(FSM::builder, T1.class, S1.class),
 
-                // Instants methods
+                // Instance methods
                 () -> assertNPE((TestUtil.M1<Runnable>) b::afterAll, () -> {}),
                 () -> assertNPE((TestUtil.M1<Consumer<Event>>) b::afterAll, e -> {}),
                 () -> assertNPE((TestUtil.M1<Runnable>) b::beforeAll, () -> {}),
@@ -73,7 +73,7 @@ public class BuilderTest {
     }
 
     @Test
-    void unknownState() {
+    void unknownState_strStates() {
         final String UNKNOWN = "UNKNOWN";
         FSM.BuilderFromStrings<String> b = FSM.builder(SS);
         assertAll(
