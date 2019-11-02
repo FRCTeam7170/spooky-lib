@@ -16,28 +16,11 @@ public class BuilderTest {
         X
     }
 
-    private enum S0 implements State {}
-
     private enum S1 implements State {
         X
     }
 
     private static final String[] SS = {"A/B", "A/B/C"};
-
-    @Test
-    void construction_noStates_strStates() {
-        assertThrows(IllegalArgumentException.class, FSM::builder);
-    }
-
-    @Test
-    void construction_nullState_strStates() {
-        assertThrows(NullPointerException.class, () -> FSM.builder("a", null, "c"));
-    }
-
-    @Test
-    void construction_noStates_enumStates() {
-        assertThrows(IllegalArgumentException.class, () -> FSM.builder(S0.class));
-    }
 
     @Test
     void nullInputs() {
