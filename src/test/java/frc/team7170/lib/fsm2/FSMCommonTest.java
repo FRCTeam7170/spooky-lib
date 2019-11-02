@@ -74,7 +74,7 @@ public class FSMCommonTest {
     }
 
     @Test
-    void getStateObj_equality_enumStates() {
+    void getStateObj_initial() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertThat(m.getStateObj(), is(SE.B));
     }
@@ -84,13 +84,7 @@ public class FSMCommonTest {
     // --------
 
     @Test
-    void getState_initial_strStates() {
-        FSM<String, String> m = FSM.builder("A").build("A");
-        assertThat(m.getState(), is("A"));
-    }
-
-    @Test
-    void getState_initial_enumStates() {
+    void getState_initial() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertThat(m.getState(), is(SE.B));
     }
@@ -100,17 +94,7 @@ public class FSMCommonTest {
     // --
 
     @Test
-    void in_initial_strStates() {
-        FSM<String, String> m = FSM.builder(SS).build("A/B");
-        assertAll(
-                () -> assertThat(m.in("A/B"), is(true)),
-                () -> assertThat(m.in("A"), is(true)),
-                () -> assertThat(m.in("A/B/C"), is(false))
-        );
-    }
-
-    @Test
-    void in_initial_enumStates() {
+    void in_initial() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertAll(
                 () -> assertThat(m.in(SE.B), is(true)),
@@ -121,8 +105,8 @@ public class FSMCommonTest {
 
     @Test
     void in_nullInput() {
-        FSM<String, String> m = FSM.builder("A").build("A");
-        assertNPE(m::in, "A");
+        FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
+        assertNPE(m::in, SE.B);
     }
 
     @Test
@@ -136,14 +120,7 @@ public class FSMCommonTest {
     // -------
 
     @Test
-    void forceTo_valid_strStates() {
-        FSM<String, String> m = FSM.builder(SS).build("A/B");
-        m.forceTo("A/B/C");
-        assertThat(m.getState(), is("A/B/C"));
-    }
-
-    @Test
-    void forceTo_valid_enumStates() {
+    void forceTo_valid() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         m.forceTo(SE.C);
         assertThat(m.getState(), is(SE.C));
@@ -166,26 +143,13 @@ public class FSMCommonTest {
     }
 
     @Test
-    void forceTo_inaccessibleState_strStates() {
-        FSM<String, String> m = FSM.builder(SS).build("A/B");
-        assertThrows(IllegalArgumentException.class, () -> m.forceTo("A"));
-    }
-
-    @Test
-    void forceTo_inaccessibleState_enumStates() {
+    void forceTo_inaccessibleState() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertThrows(IllegalArgumentException.class, () -> m.forceTo(SE.A));
     }
 
     @Test
-    void forceTo_currState_strStates() {
-        FSM<String, String> m = FSM.builder(SS).build("A/B");
-        m.forceTo("A/B");
-        assertThat(m.getState(), is("A/B"));
-    }
-
-    @Test
-    void forceTo_currState_enumStates() {
+    void forceTo_currState() {
         FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         m.forceTo(SE.B);
         assertThat(m.getState(), is(SE.B));
@@ -194,6 +158,41 @@ public class FSMCommonTest {
     // -------
     // trigger
     // -------
+
+    @Test
+    void trigger_valid_str() {
+
+    }
+
+    @Test
+    void trigger_valid_enum() {
+
+    }
+
+    @Test
+    void trigger_nullInput() {
+
+    }
+
+    @Test
+    void trigger_invalidTrigger() {
+
+    }
+
+    @Test
+    void trigger_unknownTrigger_str() {
+
+    }
+
+    @Test
+    void trigger_fsmIgnoreInvalidTrigger() {
+
+    }
+
+    @Test
+    void trigger_stateIgnoreInvalidTrigger() {
+
+    }
 
     // TODO
 
