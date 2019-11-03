@@ -16,7 +16,7 @@ public class BuilderTest {
         X
     }
 
-    private enum S1 implements State {
+    private enum S1 implements State<S1, T1> {
         X
     }
 
@@ -35,10 +35,10 @@ public class BuilderTest {
 
                 // Instance methods
                 () -> assertNPE((TestUtil.M1<Runnable>) b::afterAll, () -> {}),
-                () -> assertNPE((TestUtil.M1<Consumer<Event>>) b::afterAll, e -> {}),
+                () -> assertNPE((TestUtil.M1<Consumer<Event<String, String>>>) b::afterAll, e -> {}),
                 () -> assertNPE((TestUtil.M1<Runnable>) b::beforeAll, () -> {}),
-                () -> assertNPE((TestUtil.M1<Consumer<Event>>) b::beforeAll, e -> {}),
-                () -> assertNPE((TestUtil.M1<EventFunction>) b::beforeAll, e -> true),
+                () -> assertNPE((TestUtil.M1<Consumer<Event<String, String>>>) b::beforeAll, e -> {}),
+                () -> assertNPE((TestUtil.M1<EventFunction<String, String>>) b::beforeAll, e -> true),
                 () -> assertNPE(b::transition, "B2C", "A/B", "A/B/C"),
                 () -> assertNPE(b::transition, "B2C", List.of("A/B"), "A/B/C"),
                 () -> assertNPE(b::internalTransition, "B2C", "A/B"),
@@ -47,9 +47,9 @@ public class BuilderTest {
                 () -> assertNPE(b::reflexiveTransition, "B2C", List.of("A/B")),
                 () -> assertNPE(b::ignoreInvalidTriggers, "A/B"),
                 () -> assertNPE((TestUtil.M2<String, Runnable>) b::onEnter, "A/B", () -> {}),
-                () -> assertNPE((TestUtil.M2<String, Consumer<Event>>) b::onEnter, "A/B", e -> {}),
+                () -> assertNPE((TestUtil.M2<String, Consumer<Event<String, String>>>) b::onEnter, "A/B", e -> {}),
                 () -> assertNPE((TestUtil.M2<String, Runnable>) b::onExit, "A/B", () -> {}),
-                () -> assertNPE((TestUtil.M2<String, Consumer<Event>>) b::onExit, "A/B", e -> {}),
+                () -> assertNPE((TestUtil.M2<String, Consumer<Event<String, String>>>) b::onExit, "A/B", e -> {}),
                 // build must be last.
                 () -> assertThrows(NullPointerException.class, () -> b.build(null))
         );

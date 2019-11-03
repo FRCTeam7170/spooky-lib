@@ -50,8 +50,8 @@ public class StringStateMapTest {
     @Test
     void s2bundle() {
         StateMap<String, String> sm = getStateMap();
-        StateBundle<String> sb_a = sm.s2bundle("A");
-        StateBundle<String> sb_ab = sm.s2bundle("A/B");
+        StateBundle<String, String> sb_a = sm.s2bundle("A");
+        StateBundle<String, String> sb_ab = sm.s2bundle("A/B");
         assertAll(
                 () -> assertThat(sb_a, notNullValue()),
                 () -> assertThat(sb_ab, notNullValue()),
@@ -59,6 +59,5 @@ public class StringStateMapTest {
                 () -> assertThat(sb_a.state.name(), is("A")),
                 () -> assertThat(sb_ab.state.name(), is("B"))
         );
-
     }
 }

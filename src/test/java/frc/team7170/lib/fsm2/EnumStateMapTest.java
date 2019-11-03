@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class EnumStateMapTest {
 
-    private enum S0 implements State {}
+    private enum S0 implements State<S0, String> {}
 
-    private enum S1 implements State {
+    private enum S1 implements State<S1, String> {
         A
     }
 

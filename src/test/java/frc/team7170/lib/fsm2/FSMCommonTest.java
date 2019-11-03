@@ -11,13 +11,13 @@ import static frc.team7170.lib.TestUtil.assertNPE;
 
 public class FSMCommonTest {
 
-    private enum SE implements State {
+    private enum SE implements State<SE, TE> {
         A(null, false, false),
         B(A, true, true),
         C(B, true, false);
-
         private final SE parent;
         private final boolean accessible;
+
         private final boolean iit;
 
         SE(SE parent, boolean accessible, boolean iit) {
@@ -128,11 +128,11 @@ public class FSMCommonTest {
 
     @Test
     void forceTo_nullInput() {
-        FSM<String, String> m = FSM.builder(SS).build("A/B");
+        FSM<SE, TE> m = FSM.builder(TE.class, SE.class).build(SE.B);
         assertAll(
                 () -> assertThrows(NullPointerException.class, () -> m.forceTo(null)),
                 // null map is allowed!
-                () -> assertDoesNotThrow(() -> m.forceTo("A/B/C", null))
+                () -> assertDoesNotThrow(() -> m.forceTo(SE.C, null))
         );
     }
 
