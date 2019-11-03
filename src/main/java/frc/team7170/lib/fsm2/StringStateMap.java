@@ -28,16 +28,16 @@ class StringStateMap<T> implements StateMap<String, T> {
         // Most applications will not nest states, so this initial size is appropriate.
         bundleMap = new HashMap<>(states.length);
         for (String state : states) {
-            BaseState<T> last = null;
+            StringState<T> last = null;
             for (String seg : StringStateMap.getLineage(
                     Objects.requireNonNull(state, "state must be non-null")
             )) {
                 StateBundle<String, T> sb = bundleMap.get(seg);
                 if (sb == null) {
-                    last = new BaseState<>(seg.substring(seg.lastIndexOf(FSM.SUB_STATE_SEP)+1), last);
+                    last = new StringState<>(seg.substring(seg.lastIndexOf(FSM.SUB_STATE_SEP)+1), last);
                     bundleMap.put(seg, new StateBundle<>(last, mapSupplier));
                 } else {
-                    last = (BaseState<T>) sb.state;
+                    last = (StringState<T>) sb.state;
                 }
             }
             // getLineage always returns a list with at least one element (i.e. at least the leaf state); if the last

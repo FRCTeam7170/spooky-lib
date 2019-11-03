@@ -2,8 +2,6 @@ package frc.team7170.lib.fsm2;
 
 import java.util.function.Consumer;
 
-// TODO: rename to StringState
-
 /**
  * A basic implementation of {@link State State} used internally for when a {@link FSM FSM} is instantiated using
  * strings to represent states.
@@ -12,7 +10,7 @@ import java.util.function.Consumer;
  *
  * @author Robert Russell
  */
-class BaseState<T> implements State<String, T> {
+class StringState<T> implements State<String, T> {
 
     private final String name;
     private State<String, T> parent;
@@ -21,7 +19,7 @@ class BaseState<T> implements State<String, T> {
     Consumer<Event<String, T>> onEnter = null;
     Consumer<Event<String, T>> onExit = null;
 
-    BaseState(String name, State<String, T> parent) {
+    StringState(String name, State<String, T> parent) {
         this.name = name;
         this.parent = parent;
     }

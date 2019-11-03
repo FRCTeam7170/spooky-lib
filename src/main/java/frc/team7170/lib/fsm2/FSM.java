@@ -665,7 +665,7 @@ public final class FSM<S, T> {
         public BuilderFromStrings<T> onEnter(String state, Consumer<Event<String, T>> callback) {
             requireNotBuilt();
             Objects.requireNonNull(callback, "callback must be non-null");
-            BaseState<T> s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
+            StringState<T> s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
             if (s.onEnter == null) {
                 s.onEnter = callback;
             } else {
@@ -719,7 +719,7 @@ public final class FSM<S, T> {
         public BuilderFromStrings<T> onExit(String state, Consumer<Event<String, T>> callback) {
             requireNotBuilt();
             Objects.requireNonNull(callback, "callback must be non-null");
-            BaseState<T> s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
+            StringState<T> s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
             if (s.onExit == null) {
                 s.onExit = callback;
             } else {
@@ -728,8 +728,8 @@ public final class FSM<S, T> {
             return this;
         }
 
-        private BaseState<T> str2state(String state) {
-            return (BaseState<T>) stateMap.s2state(state);
+        private StringState<T> str2state(String state) {
+            return (StringState<T>) stateMap.s2state(state);
         }
 
     }
