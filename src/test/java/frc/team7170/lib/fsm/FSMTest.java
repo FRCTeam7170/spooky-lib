@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static frc.team7170.lib.TestUtil.assertNPE;
 
-public class FSMCommonTest {
+public class FSMTest {
 
     private static class CallbackSpy {
 
