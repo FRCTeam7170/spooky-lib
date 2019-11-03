@@ -1,4 +1,4 @@
-package frc.team7170.lib.fsm2;
+package frc.team7170.lib.fsm;
 
 import java.util.Map;
 import java.util.function.Supplier;

@@ -1,235 +1,249 @@
 package frc.team7170.lib.fsm;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.logging.Logger;
 
-public class Transition {
+/**
+ * {@code Transition} is used internally to represent a state transition on a {@link FSM FSM}.
+ *
+ * @param <S> the state type.
+ * @param <T> the trigger type.
+ *
+ * @author Robert Russell
+ */
+final class Transition<S, T> {
 
-    private static final Logger LOGGER = Logger.getLogger(Transition.class.getName());
+    /**
+     * A builder for transitions in a {@link FSM FSM}.
+     *
+     * @apiNote {@code Builder} is genericized in terms of the {@link FSM.Builder FSM.Builder} type so that
+     * {@link #build() build} knows what type to return.
+     *
+     * @param <S> the state type
+     * @param <T> the trigger type.
+     * @param <I> the type of the {@link FSM.Builder FSM.Builder}.
+     *
+     * @author Robert Russell
+     */
+    public static final class Builder<S, T, I extends FSM.Builder<S, T, I>> {
 
-    public static final State[] ALL_STATES = new State[0];
+        private final T trigger;
+        private final List<StateBundle<S, T>> srcs;
+        private final StateBundle<S, T> dst;
+        private final I parent;
+        private final boolean internal;
+        private EventFunction<S, T> before;
+        private Consumer<Event<S, T>> after;
 
-    private enum TransitionMode {
-        NORMAL, REFLEXIVE, INTERNAL
-    }
-
-    public static class TransitionConfig {
-
-        private final State[] srcs;
-        private final State dest;
-        private final Trigger trigger;
-        @SuppressWarnings("unchecked")
-        private Consumer<Event>[] prepare = new Consumer[0];
-        @SuppressWarnings("unchecked")
-        private Consumer<Event>[] onStart = new Consumer[0];
-        @SuppressWarnings("unchecked")
-        private Consumer<Event>[] onEnd = new Consumer[0];
-        @SuppressWarnings("unchecked")
-        private Predicate<Event>[] conditions = new Predicate[0];
-        private boolean permitMistrigger;
-        private TransitionMode mode = TransitionMode.NORMAL;
-
-        public TransitionConfig(State[] srcs, State dest, Trigger trigger) {
-            this.srcs = srcs;
-            this.dest = dest;
+        private Builder(T trigger, List<StateBundle<S, T>> srcs, StateBundle<S, T> dst, I parent, boolean internal) {
+            // All parameters should have already been validated.
             this.trigger = trigger;
+            this.srcs = srcs;
+            this.dst = dst;
+            this.parent = parent;
+            this.internal = internal;
         }
 
-        public TransitionConfig(State src, State dest, Trigger trigger) {
-            this(new State[] {src}, dest, trigger);
+        /**
+         * <p>
+         * Register a callback to be run before this transition executes. The associated transition context (i.e.
+         * {@link Event Event} object) is ignored.
+         * </p>
+         * <p>
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple before callbacks can be added and they will be invoked in the order they were added. If any before
+         * callback returns false, the remaining before callbacks will not be executed.
+         * </p>
+         *
+         * @param callback a callback to be run before this transition executes.
+         * @return this builder.
+         * @throws NullPointerException if the given callback is {@code null}.
+         */
+        public Builder<S, T, I> before(Runnable callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            return before(event -> {
+                callback.run();
+                return true;
+            });
         }
 
-        public TransitionConfig onStart(Consumer<Event>... onStart) {
-            this.onStart = onStart;
-            return this;
+        /**
+         * <p>
+         * Register a callback accepting an {@link Event Event} object to be run before this transition executes.
+         * </p>
+         * <p>
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple before callbacks can be added and they will be invoked in the order they were added. If any before
+         * callback returns false, the remaining before callbacks will not be executed.
+         * </p>
+         *
+         * @param callback a callback to be run before this transition executes.
+         * @return this builder.
+         * @throws NullPointerException if the given callback is {@code null}.
+         */
+        public Builder<S, T, I> before(Consumer<Event<S, T>> callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            return before(event -> {
+                callback.accept(event);
+                return true;
+            });
         }
 
-        public TransitionConfig onEnd(Consumer<Event>... onEnd) {
-            this.onEnd = onEnd;
-            return this;
-        }
-
-        public TransitionConfig prepare(Consumer<Event>... prepare) {
-            this.prepare = prepare;
-            return this;
-        }
-
-        public TransitionConfig conditions(Predicate<Event>... conditions) {
-            this.conditions = conditions;
-            return this;
-        }
-
-        public TransitionConfig permitMistrigger() {
-            permitMistrigger = true;
-            return this;
-        }
-
-        public static TransitionConfig newReflexive(State[] states, Trigger trigger) {
-            TransitionConfig ret = new TransitionConfig(states, null, trigger);
-            ret.mode = TransitionMode.REFLEXIVE;
-            return ret;
-        }
-
-        public static TransitionConfig newReflexive(State state, Trigger trigger) {
-            return newReflexive(new State[] {state}, trigger);
-        }
-
-        public static TransitionConfig newInternal(State[] states, Trigger trigger) {
-            TransitionConfig ret = new TransitionConfig(states, null, trigger);
-            ret.mode = TransitionMode.INTERNAL;
-            return ret;
-        }
-
-        public static TransitionConfig newInternal(State state, Trigger trigger) {
-            return newInternal(new State[] {state}, trigger);
-        }
-    }
-
-    private final List<State> srcs;
-    private final State dest;
-    private final Trigger trigger;
-    private final Consumer<Event>[] prepare, onStart, onEnd;
-    private final Predicate<Event>[] conditions;
-    private final boolean permitMistrigger;
-    private final TransitionMode mode;
-    private final FiniteStateMachine machine;
-
-    Transition(TransitionConfig config, FiniteStateMachine machine) {
-        if (config.trigger.getMachine() != machine) {
-            throw new IllegalArgumentException("trigger machine and given machine do not match");
-        }
-        this.srcs = Arrays.asList(config.srcs);
-        this.dest = config.dest;
-        this.trigger = config.trigger;
-        this.onStart = config.onStart;
-        this.onEnd = config.onEnd;
-        this.prepare = config.prepare;
-        this.conditions = config.conditions;
-        this.permitMistrigger = config.permitMistrigger;
-        this.mode = config.mode;
-        this.machine = machine;
-    }
-
-    public List<State> getSrcs() {
-        return new ArrayList<>(srcs);
-    }
-
-    public boolean isWildcard() {
-        return srcs.isEmpty();
-    }
-
-    public State getDest() {
-        return dest;
-    }
-
-    public Trigger getTrigger() {
-        return trigger;
-    }
-
-    public Consumer<Event>[] getOnStart() {
-        return onStart;
-    }
-
-    public Consumer<Event>[] getOnEnd() {
-        return onEnd;
-    }
-
-    public Consumer<Event>[] getPrepare() {
-        return prepare;
-    }
-
-    public Predicate<Event>[] getConditions() {
-        return conditions;
-    }
-
-    public boolean getPermitMistrigger() {
-        return permitMistrigger;
-    }
-
-    public FiniteStateMachine getMachine() {
-        return machine;
-    }
-
-    public boolean isReflexive() {
-        return mode == TransitionMode.REFLEXIVE;
-    }
-
-    public boolean isInternal() {
-        return mode == TransitionMode.INTERNAL;
-    }
-
-    public State mapsTo(State state) {
-        if (state == null) {
-            throw new NullPointerException();
-        }
-        if (!isWildcard()) {
-            while (state != null) {
-                if (srcs.contains(state)) {
-                    break;
-                }
-                state = state.getParent();
-            }
-        }
-        if (state == null) {
-            return null;
-        }
-        if (dest != null) {
-            return dest;
-        }
-        return state;
-    }
-
-    public boolean hasMappingFor(State state) {
-        return mapsTo(state) != null;
-    }
-
-    public boolean execute(boolean log, Object... arguments) {
-        boolean success = machine.executeTransition(this, arguments);
-        if (log) {
-            if (success) {
-                LOGGER.fine(String.format("Transition '%s' executed successfully.", toString()));
+        /**
+         * <p>
+         * Register a callback accepting an {@link Event Event} object to be run before this transition executes. The
+         * callback returns a boolean indicating whether the transition should proceed (true if it should proceed, false
+         * if not), effectively allowing one to create conditional transitions.
+         * </p>
+         * <p>
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple before callbacks can be added and they will be invoked in the order they were added. If any before
+         * callback returns false, the remaining before callbacks will not be executed.
+         * </p>
+         *
+         * @param callback a callback to be run before this transition executes.
+         * @return this builder.
+         * @throws NullPointerException if the given callback is {@code null}.
+         */
+        public Builder<S, T, I> before(EventFunction<S, T> callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            if (before == null) {
+                before = callback;
             } else {
-                LOGGER.fine(String.format("Transition '%s' failed to execute.", toString()));
+                before = before.seqCompose(callback);
             }
+            return this;
         }
-        return success;
-    }
 
-    public boolean execute(Object... arguments) {
-        return execute(true, arguments);
-    }
-
-    void started(Event event) {
-        for (Consumer<Event> os : onStart) {
-            os.accept(event);
+        /**
+         * <p>
+         * Register a callback to be run after this transition executes. The associated transition context (i.e.
+         * {@link Event Event} object) is ignored.
+         * </p>
+         * <p>
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple after callbacks can be added and they will be invoked in the order they were added.
+         * </p>
+         *
+         * @param callback a callback to be run after this transition executes.
+         * @return this builder.
+         * @throws NullPointerException if the given callback is {@code null}.
+         */
+        public Builder<S, T, I> after(Runnable callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            return after(event -> callback.run());
         }
-    }
 
-    void ended(Event event) {
-        for (Consumer<Event> oe : onEnd) {
-            oe.accept(event);
-        }
-    }
-
-    void prepare(Event event) {
-        for (Consumer<Event> p : prepare) {
-            p.accept(event);
-        }
-    }
-
-    boolean checkConditions(Event event) {
-        for (Predicate<Event> condition : conditions) {
-            if (!condition.test(event)) {
-                return false;
+        /**
+         * <p>
+         * Register a callback accepting an {@link Event Event} object to be run after this transition executes.
+         * </p>
+         * <p>
+         * The callback should return quickly, lest the rest of the transition procedure will be delayed.
+         * </p>
+         * <p>
+         * Multiple after callbacks can be added and they will be invoked in the order they were added.
+         * </p>
+         *
+         * @param callback a callback to be run after this transition executes.
+         * @return this builder.
+         * @throws NullPointerException if the given callback is {@code null}.
+         */
+        public Builder<S, T, I> after(Consumer<Event<S, T>> callback) {
+            Objects.requireNonNull(callback, "callback must be non-null");
+            if (after == null) {
+                after = callback;
+            } else {
+                after = after.andThen(callback);
             }
+            return this;
         }
-        return true;
+
+        /**
+         * Build the {@code Transition} object and register it with all the source states.
+         *
+         * @return the parent {@linkplain FSM.Builder FSM builder}.
+         */
+        public I build() {
+            Transition<S, T> transition = new Transition<>(dst, before, after, internal);
+            for (StateBundle<S, T> src : srcs) {
+                src.addTransition(trigger, transition);
+            }
+            return parent;
+        }
+
+        /**
+         * @return a new {@code Transition.Builder} for a normal (i.e. not internal or reflexive) transition.
+         */
+        static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> normal(
+                T trigger, List<StateBundle<S, T>> srcs, StateBundle<S, T> dst, I parent
+        ) {
+            return new Builder<>(trigger, srcs, dst, parent, false);
+        }
+
+        /**
+         * @return a new {@code Transition.Builder} for an internal transition.
+         */
+        static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> internal(
+                T trigger, List<StateBundle<S, T>> srcs, I parent
+        ) {
+            return new Builder<>(trigger, srcs, null, parent, true);
+        }
+
+        /**
+         * @return a new {@code Transition.Builder} for a reflexive transition.
+         */
+        static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> reflexive(
+                T trigger, List<StateBundle<S, T>> srcs, I parent
+        ) {
+            return new Builder<>(trigger, srcs, null, parent, false);
+        }
     }
 
-    @Override
-    public String toString() {
-        return String.format("%s -> %s", srcs.isEmpty() ? "ALL" : srcs, dest);
+    private final StateBundle<S, T> dst;
+    private final EventFunction<S, T> before;
+    private final Consumer<Event<S, T>> after;
+    final boolean internal;
+
+    private Transition(
+            StateBundle<S, T> dst,
+            EventFunction<S, T> before,
+            Consumer<Event<S, T>> after,
+            boolean internal
+    ) {
+        this.dst = dst;
+        this.before = before;
+        this.after = after;
+        this.internal = internal;
+    }
+
+    /**
+     * Resolve the destination state for this transition given the source state and assuming the given source state is a
+     * valid source state for this transition.
+     *
+     * @param src the source state (bundle).
+     * @return the resolved destination state.
+     */
+    StateBundle<S, T> resolveDst(StateBundle<S, T> src) {
+        return dst != null ? dst : src;
+    }
+
+    boolean before(Event<S, T> event) {
+        return before == null || before.apply(event);
+    }
+
+    void after(Event<S, T> event) {
+        if (after != null) {
+            after.accept(event);
+        }
     }
 }

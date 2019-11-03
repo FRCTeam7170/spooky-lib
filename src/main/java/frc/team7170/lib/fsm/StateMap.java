@@ -1,4 +1,4 @@
-package frc.team7170.lib.fsm2;
+package frc.team7170.lib.fsm;
 
 /**
  * {@code StateMap} is used internally as a means to have different ways of converting objects of the generic state type

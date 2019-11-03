@@ -1,194 +1,132 @@
 package frc.team7170.lib.fsm;
 
-import frc.team7170.lib.Name;
-import frc.team7170.lib.Named;
+import java.util.Objects;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
+/**
+ * A state for a {@link FSM FSM}.
+ *
+ * @apiNote This interface is provided to be implemented by enums to create an enum of all the states for a {@code FSM}.
+ * Considering the restrictions on instantiation of {@code FSMs}, implementing this interface on anything other than an
+ * enum is pointless.
+ *
+ * @param <S> the state type. For user/enum implementations, this should be the enum type (an FSM cannot be instantiated
+ *           otherwise).
+ * @param <T> the trigger type. This should either be {@code String} or an enum type (an FSM cannot be instantiated
+ *           otherwise).
+ *
+ * @author Robert Russell
+ */
+public interface State<S, T> {
 
-public class State implements Named {
+    /**
+     * Get the name of this state. The returned name is relative, meaning it does not contain its ancestors' names
+     * delimited by {@value FSM#SUB_STATE_SEP}.
+     *
+     * @apiNote This method is called {@code name} as opposed to {@code getName} so it is automatically satisfied by
+     * enum implementors. Since the {@link Enum#name() name} method for enums is final and the sub state
+     * separator/delimiter ({@value FSM#SUB_STATE_SEP}) is not a valid identifier character in Java, this guarantees
+     * that users can not create enum-based states with invalid names (i.e. containing {@value FSM#SUB_STATE_SEP}).
+     * Moreover, since {@link FSM FSMs} can only be instantiated with strings or an enum representing states, this
+     * effectively guarantees users cannot make states with invalid names at all.
+     *
+     * @return the name of this state.
+     */
+    String name();
 
-    private static final String PARENT_CHILD_STR_SEP = ".";
-
-    public static class StateConfig {
-
-        final Name name;
-        @SuppressWarnings("unchecked")
-        private Consumer<Event>[] onEnter = new Consumer[0];
-        @SuppressWarnings("unchecked")
-        private Consumer<Event>[] onExit = new Consumer[0];
-        private boolean permitNoChildSelection = true;
-        private boolean permitMistrigger = false;
-
-        public StateConfig(Name name) {
-            this.name = name;
-        }
-
-        public StateConfig onEnter(Consumer<Event>... onEnter) {
-            this.onEnter = onEnter;
-            return this;
-        }
-
-        public StateConfig onExit(Consumer<Event>... onExit) {
-            this.onExit = onExit;
-            return this;
-        }
-
-        public StateConfig requireChildSelection() {
-            permitNoChildSelection = false;
-            return this;
-        }
-
-        public StateConfig permitMistrigger() {
-            permitMistrigger = true;
-            return this;
-        }
+    /**
+     * Get the parent {@code State} of this state, or {@code null} if it has no parent.
+     *
+     * @implSpec Dynamically changing the return value of this method will result in undefined behaviour.
+     *
+     * @return the parent {@code State} of this state, or {@code null} if it has no parent.
+     */
+    default State<S, T> getParent() {
+        return null;
     }
 
-    private final Name name;
-    private final Consumer<Event>[] onEnter, onExit;
-    private final boolean permitNoChildSelection;
-    private final boolean permitMistrigger;
-    private final FiniteStateMachine machine;
-    private final State parent;
-    private State preferredChild;
-    private Set<String> subStateNames;
-
-    private State(StateConfig config, FiniteStateMachine machine, State parent) {
-        this.name = config.name;
-        this.onEnter = config.onEnter;
-        this.onExit = config.onExit;
-        this.permitNoChildSelection = config.permitNoChildSelection;
-        this.permitMistrigger = config.permitMistrigger;
-        this.machine = machine;
-        this.parent = parent;
+    /**
+     * Get whether or not this state is "accessible" (can be directly entered by a {@link FSM FSM}).
+     *
+     * @apiNote This property is mainly provided to allow one to create state hierarchies in which certain states may
+     * only be entered through their (distant) children (e.g. a state "A" might be inaccessible, but a {@code FSM} can
+     * still be considered in state "A" if it is in an accessible child/grandchild/etc. of "A"). Typically, this
+     * property might be leveraged to assure a {@code FSM} can only assume leaf states (i.e. states with no children).
+     *
+     * @implSpec Dynamically changing the return value of this method will result in undefined behaviour.
+     *
+     * @return whether or not this state is "accessible".
+     */
+    default boolean isAccessible() {
+        return true;
     }
 
-    State(StateConfig config, FiniteStateMachine machine) {
-        this(config, machine, null);
+    /**
+     * Get whether or not to ignore invalid triggers while this state is the current state in a {@link FSM FSM}.
+     *
+     * @implSpec Dynamically changing the return value of this method will result in undefined behaviour.
+     *
+     * @return whether or not to ignore invalid triggers while this state is the current state in a {@code FSM}.
+     */
+    default boolean getIgnoreInvalidTriggers() {
+        return false;
     }
 
-    @Override
-    public String getName() {
-        return name.getName();
+    /**
+     * Callback that is executed after this state is entered.
+     *
+     * @param event the state change context.
+     */
+    default void onEnter(Event<S, T> event) {}
+
+    /**
+     * Callback that is executed before this state is exited.
+     *
+     * @param event the state change context.
+     */
+    default void onExit(Event<S, T> event) {}
+
+    /**
+     * Get the full name of the the given state (i.e. the name containing all the ancestor names delimited by
+     * {@value FSM#SUB_STATE_SEP}).
+     *
+     * @param state the state to get the full name of.
+     * @return the full name of the the given state (i.e. the name containing all the ancestor names delimited by
+     * {@value FSM#SUB_STATE_SEP}).
+     * @throws NullPointerException if the given state is {@code null}.
+     */
+    static <S, T> String fullName(State<S, T> state) {
+        StringBuilder sb = new StringBuilder();
+        fullNameR(sb, Objects.requireNonNull(state, "state must be non-null"), false);
+        return sb.toString();
     }
 
-    @Override
-    public Name getNameObject() {
-        return name;
-    }
-
-    @Override
-    public String toString() {
-        return lineageToString(new StringBuilder());
-    }
-
-    private String lineageToString(StringBuilder builder) {
-        builder.insert(0, getName());
-        if (hasParent()) {
-            builder.insert(0, PARENT_CHILD_STR_SEP);
-            parent.lineageToString(builder);
-        }
-        return builder.toString();
-    }
-
-    public State getParent() {
-        return parent;
-    }
-
-    public boolean hasParent() {
-        return parent != null;
-    }
-
-    public List<State> getLineage() {
-        // TODO: cache this?
-        List<State> lineage = new ArrayList<>();
-        State state = this;
-        while (state != null) {
-            lineage.add(state);
-            state = state.parent;
-        }
-        return lineage;
-    }
-
-    public Consumer<Event>[] getOnEnter() {
-        return onEnter;
-    }
-
-    public Consumer<Event>[] getOnExit() {
-        return onExit;
-    }
-
-    public boolean getPermitNoChildSelection() {
-        return permitNoChildSelection;
-    }
-
-    public boolean getPermitMistrigger() {
-        return permitMistrigger;
-    }
-
-    public FiniteStateMachine getMachine() {
-        return machine;
-    }
-
-    public void setPreferredChild(State preferredChild) {
-        if (preferredChild.getParent() != this) {
-            throw new RuntimeException("cannot set preferredChild to a state not parented by this State");
-        }
-        this.preferredChild = preferredChild;
-    }
-
-    public State getPreferredChild() {
-        return preferredChild;
-    }
-
-    public State addSubState(StateConfig config) {
-        if (subStateNames == null) {
-            subStateNames = new HashSet<>();
-        }
-        String name = config.name.getName();
-        if (!isSubStateNameUnique(name)) {
-            throw new IllegalArgumentException("a sub-state with name '" + name + "' already exists on this state");
-        }
-        subStateNames.add(name);
-        State subState = new State(config, this.machine, this);
-        if (preferredChild == null) {
-            preferredChild = subState;
-        }
-        return subState;
-    }
-
-    private boolean isSubStateNameUnique(String name) {
-        return !subStateNames.contains(name);
-    }
-
-    public State addSubState(Name name) {
-        return addSubState(new StateConfig(name));
-    }
-
-    void entered(Event event) {
-        for (Consumer<Event> oe : onEnter) {
-            oe.accept(event);
-        }
-    }
-
-    void exited(Event event) {
-        for (Consumer<Event> oe : onExit) {
-            oe.accept(event);
-        }
-    }
-
-    State assureValidNesting() {
-        State state = this;
-        while (!state.permitNoChildSelection) {
-            state = state.getPreferredChild();
-            if (state == null) {
-                throw new IllegalStateException("state requiring child selection must have children");
+    private static <S, T> void fullNameR(StringBuilder sb, State<S, T> state, boolean sep) {
+        if (state != null) {
+            fullNameR(sb, state.getParent(), true);
+            sb.append(state.name());
+            if (sep) {
+                sb.append(FSM.SUB_STATE_SEP);
             }
         }
-        return state;
+    }
+
+    /**
+     * Get whether or not the given state "parent" is in the lineage/ancestry of the given state "child". A state is
+     * considered in its own lineage.
+     *
+     * @param child the (potential) child state.
+     * @param parent the (potential) parent state.
+     * @return whether or not the given state "parent" is in the lineage/ancestry of the given state "child".
+     * @throws NullPointerException if either of the given states are {@code null}.
+     */
+    static <S, T> boolean inLineage(State<S, T> child, State<S, T> parent) {
+        Objects.requireNonNull(child, "child state must be non-null");
+        Objects.requireNonNull(parent, "parent state must be non-null");
+        for (; child != null; child = child.getParent()) {
+            if (child == parent) {
+                return true;
+            }
+        }
+        return false;
     }
 }
