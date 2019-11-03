@@ -20,7 +20,7 @@ interface StateMap<S, T> {
      * @param state the state to convert.
      * @return the converted state.
      */
-    S state2s(State state);
+    S state2s(State<S, T> state);
 
     /**
      * Convert the given state of the generic state type to a {@link State State}.
@@ -30,7 +30,7 @@ interface StateMap<S, T> {
      * @throws IllegalArgumentException if the given state of the generic state type cannot be converted to a
      * {@code State}.
      */
-    State s2state(S s);
+    State<S, T> s2state(S s);
 
     /**
      * Convert the given state of the generic state type to a {@link StateBundle StateBundle}.
@@ -39,5 +39,5 @@ interface StateMap<S, T> {
      * @return the {@code StateBundle}, or {@code null} if the given state of the generic state type does not have an
      * associated {@code StateBundle} (i.e. does not belong to the {@link FSM FSM} containing this {@code StateMap}).
      */
-    StateBundle<T> s2bundle(S s);
+    StateBundle<S, T> s2bundle(S s);
 }

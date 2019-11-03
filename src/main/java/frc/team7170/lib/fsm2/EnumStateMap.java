@@ -13,16 +13,16 @@ import java.util.function.Supplier;
  *
  * @author Robert Russell
  */
-class EnumStateMap<S extends Enum<S> & State, T> implements StateMap<S, T> {
+class EnumStateMap<S extends Enum<S> & State<S, T>, T> implements StateMap<S, T> {
 
-    private final Map<S, StateBundle<T>> bundleMap;
+    private final Map<S, StateBundle<S, T>> bundleMap;
 
     /**
      * @param stateEnum the class object of the enum whose constants are to be used for states.
      * @param mapSupplier a supplier returning maps appropriate for the trigger type.
      * @throws IllegalArgumentException if the given enum has no constants.
      */
-    EnumStateMap(Class<S> stateEnum, Supplier<Map<T, Transition<T>>> mapSupplier) {
+    EnumStateMap(Class<S> stateEnum, Supplier<Map<T, Transition<S, T>>> mapSupplier) {
         S[] enumConstants = stateEnum.getEnumConstants();
         if (enumConstants.length == 0) {
             throw new IllegalArgumentException("state machines must have at least one state");
@@ -36,17 +36,17 @@ class EnumStateMap<S extends Enum<S> & State, T> implements StateMap<S, T> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public S state2s(State state) {
+    public S state2s(State<S, T> state) {
         return (S) state;
     }
 
     @Override
-    public State s2state(S s) {
+    public State<S, T> s2state(S s) {
         return s;
     }
 
     @Override
-    public StateBundle<T> s2bundle(S s) {
+    public StateBundle<S, T> s2bundle(S s) {
         return bundleMap.get(s);
     }
 }

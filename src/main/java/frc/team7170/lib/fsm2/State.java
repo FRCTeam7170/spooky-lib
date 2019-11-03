@@ -9,9 +9,12 @@ import java.util.Objects;
  * Considering the restrictions on instantiation of {@code FSMs}, implementing this interface on anything other than an
  * enum is pointless.
  *
+ * @param <S> the state type. For enum implementors, this should be the enum type.
+ * @param <T> the trigger type.
+ *
  * @author Robert Russell
  */
-public interface State {
+public interface State<S, T> {
 
     /**
      * Get the name of this state. The returned name is relative, meaning it does not contain its ancestors' names
@@ -35,7 +38,7 @@ public interface State {
      *
      * @return the parent {@code State} of this state, or {@code null} if it has no parent.
      */
-    default State getParent() {
+    default State<S, T> getParent() {
         return null;
     }
 
@@ -71,14 +74,14 @@ public interface State {
      *
      * @param event the state change context.
      */
-    default void onEnter(Event event) {}
+    default void onEnter(Event<S, T> event) {}
 
     /**
      * Callback that is executed before this state is exited.
      *
      * @param event the state change context.
      */
-    default void onExit(Event event) {}
+    default void onExit(Event<S, T> event) {}
 
     /**
      * Get the full name of the the given state (i.e. the name containing all the ancestor names delimited by
@@ -89,13 +92,13 @@ public interface State {
      * {@value FSM#SUB_STATE_SEP}).
      * @throws NullPointerException if the given state is {@code null}.
      */
-    static String fullName(State state) {
+    static <S, T> String fullName(State<S, T> state) {
         StringBuilder sb = new StringBuilder();
         fullNameR(sb, Objects.requireNonNull(state, "state must be non-null"), false);
         return sb.toString();
     }
 
-    private static void fullNameR(StringBuilder sb, State state, boolean sep) {
+    private static <S, T> void fullNameR(StringBuilder sb, State<S, T> state, boolean sep) {
         if (state != null) {
             fullNameR(sb, state.getParent(), true);
             sb.append(state.name());
@@ -114,7 +117,7 @@ public interface State {
      * @return whether or not the given state "parent" is in the lineage/ancestry of the given state "child".
      * @throws NullPointerException if either of the given states are {@code null}.
      */
-    static boolean inLineage(State child, State parent) {
+    static <S, T> boolean inLineage(State<S, T> child, State<S, T> parent) {
         Objects.requireNonNull(child, "child state must be non-null");
         Objects.requireNonNull(parent, "parent state must be non-null");
         for (; child != null; child = child.getParent()) {

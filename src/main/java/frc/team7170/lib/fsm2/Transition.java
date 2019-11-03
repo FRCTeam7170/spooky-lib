@@ -7,11 +7,12 @@ import java.util.function.Consumer;
 /**
  * {@code Transition} is used internally to represent a state transition on a {@link FSM FSM}.
  *
+ * @param <S> the state type.
  * @param <T> the trigger type.
  *
  * @author Robert Russell
  */
-final class Transition<T> {
+final class Transition<S, T> {
 
     /**
      * A builder for transitions in a {@link FSM FSM}.
@@ -28,14 +29,14 @@ final class Transition<T> {
     public static final class Builder<S, T, I extends FSM.Builder<S, T, I>> {
 
         private final T trigger;
-        private final List<StateBundle<T>> srcs;
-        private final StateBundle<T> dst;
+        private final List<StateBundle<S, T>> srcs;
+        private final StateBundle<S, T> dst;
         private final I parent;
         private final boolean internal;
-        private EventFunction before;
-        private Consumer<Event> after;
+        private EventFunction<S, T> before;
+        private Consumer<Event<S, T>> after;
 
-        private Builder(T trigger, List<StateBundle<T>> srcs, StateBundle<T> dst, I parent, boolean internal) {
+        private Builder(T trigger, List<StateBundle<S, T>> srcs, StateBundle<S, T> dst, I parent, boolean internal) {
             // All parameters should have already been validated.
             this.trigger = trigger;
             this.srcs = srcs;
@@ -85,7 +86,7 @@ final class Transition<T> {
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          */
-        public Builder<S, T, I> before(Consumer<Event> callback) {
+        public Builder<S, T, I> before(Consumer<Event<S, T>> callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
             return before(event -> {
                 callback.accept(event);
@@ -111,7 +112,7 @@ final class Transition<T> {
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          */
-        public Builder<S, T, I> before(EventFunction callback) {
+        public Builder<S, T, I> before(EventFunction<S, T> callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
             if (before == null) {
                 before = callback;
@@ -157,7 +158,7 @@ final class Transition<T> {
          * @return this builder.
          * @throws NullPointerException if the given callback is {@code null}.
          */
-        public Builder<S, T, I> after(Consumer<Event> callback) {
+        public Builder<S, T, I> after(Consumer<Event<S, T>> callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
             if (after == null) {
                 after = callback;
@@ -173,8 +174,8 @@ final class Transition<T> {
          * @return the parent {@linkplain FSM.Builder FSM builder}.
          */
         public I build() {
-            Transition<T> transition = new Transition<>(dst, before, after, internal);
-            for (StateBundle<T> src : srcs) {
+            Transition<S, T> transition = new Transition<>(dst, before, after, internal);
+            for (StateBundle<S, T> src : srcs) {
                 src.addTransition(trigger, transition);
             }
             return parent;
@@ -184,7 +185,7 @@ final class Transition<T> {
          * @return a new {@code Transition.Builder} for a normal (i.e. not internal or reflexive) transition.
          */
         static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> normal(
-                T trigger, List<StateBundle<T>> srcs, StateBundle<T> dst, I parent
+                T trigger, List<StateBundle<S, T>> srcs, StateBundle<S, T> dst, I parent
         ) {
             return new Builder<>(trigger, srcs, dst, parent, false);
         }
@@ -193,7 +194,7 @@ final class Transition<T> {
          * @return a new {@code Transition.Builder} for an internal transition.
          */
         static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> internal(
-                T trigger, List<StateBundle<T>> srcs, I parent
+                T trigger, List<StateBundle<S, T>> srcs, I parent
         ) {
             return new Builder<>(trigger, srcs, null, parent, true);
         }
@@ -202,18 +203,23 @@ final class Transition<T> {
          * @return a new {@code Transition.Builder} for a reflexive transition.
          */
         static <S, T, I extends FSM.Builder<S, T, I>> Transition.Builder<S, T, I> reflexive(
-                T trigger, List<StateBundle<T>> srcs, I parent
+                T trigger, List<StateBundle<S, T>> srcs, I parent
         ) {
             return new Builder<>(trigger, srcs, null, parent, false);
         }
     }
 
-    private final StateBundle<T> dst;
-    private final EventFunction before;
-    private final Consumer<Event> after;
+    private final StateBundle<S, T> dst;
+    private final EventFunction<S, T> before;
+    private final Consumer<Event<S, T>> after;
     final boolean internal;
 
-    private Transition(StateBundle<T> dst, EventFunction before, Consumer<Event> after, boolean internal) {
+    private Transition(
+            StateBundle<S, T> dst,
+            EventFunction<S, T> before,
+            Consumer<Event<S, T>> after,
+            boolean internal
+    ) {
         this.dst = dst;
         this.before = before;
         this.after = after;
@@ -227,15 +233,15 @@ final class Transition<T> {
      * @param src the source state (bundle).
      * @return the resolved destination state.
      */
-    StateBundle<T> resolveDst(StateBundle<T> src) {
+    StateBundle<S, T> resolveDst(StateBundle<S, T> src) {
         return dst != null ? dst : src;
     }
 
-    boolean before(Event event) {
+    boolean before(Event<S, T> event) {
         return before == null || before.apply(event);
     }
 
-    void after(Event event) {
+    void after(Event<S, T> event) {
         if (after != null) {
             after.accept(event);
         }

@@ -168,8 +168,8 @@ public final class FSM<S, T> {
         private boolean built = false;
 
         private boolean ignoreInvalidTriggers;
-        private EventFunction beforeAll;
-        private Consumer<Event> afterAll;
+        private EventFunction<S, T> beforeAll;
+        private Consumer<Event<S, T>> afterAll;
         final StateMap<S, T> stateMap;
 
         Builder(StateMap<S, T> sm) {
@@ -183,8 +183,8 @@ public final class FSM<S, T> {
          * @return the resolved {@code StateBundle}.
          * @throws IllegalArgumentException if the given state does not belong to this FSM.
          */
-        private StateBundle<T> resolveState(S state) {
-            StateBundle<T> sb = stateMap.s2bundle(state);
+        private StateBundle<S, T> resolveState(S state) {
+            StateBundle<S, T> sb = stateMap.s2bundle(state);
             if (sb == null) {
                 throw new IllegalArgumentException("state does not belong to this FSM");
             }
@@ -260,7 +260,7 @@ public final class FSM<S, T> {
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
-        public I beforeAll(Consumer<Event> callback) {
+        public I beforeAll(Consumer<Event<S, T>> callback) {
             Objects.requireNonNull(callback, "callback must be non-null");
             return beforeAll(event -> {
                 callback.accept(event);
@@ -287,7 +287,7 @@ public final class FSM<S, T> {
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
-        public I beforeAll(EventFunction callback) {
+        public I beforeAll(EventFunction<S, T> callback) {
             requireNotBuilt();
             Objects.requireNonNull(callback, "callback must be non-null");
             if (beforeAll == null) {
@@ -337,7 +337,7 @@ public final class FSM<S, T> {
          * @throws NullPointerException if the given callback is {@code null}.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
-        public I afterAll(Consumer<Event> callback) {
+        public I afterAll(Consumer<Event<S, T>> callback) {
             requireNotBuilt();
             Objects.requireNonNull(callback, "callback must be non-null");
             if (afterAll == null) {
@@ -359,7 +359,7 @@ public final class FSM<S, T> {
          * this FSM.
          * @throws IllegalArgumentException if any source state in the given list of source states is inaccessible.
          */
-        private List<StateBundle<T>> resolveSrcs(List<S> srcs) {
+        private List<StateBundle<S, T>> resolveSrcs(List<S> srcs) {
             if (Objects.requireNonNull(srcs, "srcs must be non-null").isEmpty()) {
                 throw new IllegalArgumentException("transitions must have at least one src state");
             }
@@ -380,7 +380,7 @@ public final class FSM<S, T> {
          * @return the given {@code StateBundle}.
          * @throws IllegalArgumentException if the state in the given {@code StateBundle} is not accessible.
          */
-        private StateBundle<T> requireAccessible(StateBundle<T> sb) {
+        private StateBundle<S, T> requireAccessible(StateBundle<S, T> sb) {
             if (!sb.state.isAccessible()) {
                 throw new IllegalArgumentException("state must be accessible");
             }
@@ -588,7 +588,7 @@ public final class FSM<S, T> {
      */
     public static final class BuilderFromStrings<T> extends FSM.Builder<String, T, BuilderFromStrings<T>> {
 
-        BuilderFromStrings(String[] states, Supplier<Map<T, Transition<T>>> mapSupplier) {
+        BuilderFromStrings(String[] states, Supplier<Map<T, Transition<String, T>>> mapSupplier) {
             // Static factory methods guarantee states is non-null.
             // StringStateMap constructor guarantees states is not empty.
             super(new StringStateMap<>(states, mapSupplier));
@@ -662,10 +662,10 @@ public final class FSM<S, T> {
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
-        public BuilderFromStrings<T> onEnter(String state, Consumer<Event> callback) {
+        public BuilderFromStrings<T> onEnter(String state, Consumer<Event<String, T>> callback) {
             requireNotBuilt();
             Objects.requireNonNull(callback, "callback must be non-null");
-            BaseState s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
+            BaseState<T> s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
             if (s.onEnter == null) {
                 s.onEnter = callback;
             } else {
@@ -716,10 +716,10 @@ public final class FSM<S, T> {
          * @throws IllegalArgumentException if the given state does not belong to the FSM being built.
          * @throws IllegalStateException if {@link #build build} has already been called.
          */
-        public BuilderFromStrings<T> onExit(String state, Consumer<Event> callback) {
+        public BuilderFromStrings<T> onExit(String state, Consumer<Event<String, T>> callback) {
             requireNotBuilt();
             Objects.requireNonNull(callback, "callback must be non-null");
-            BaseState s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
+            BaseState<T> s = str2state(Objects.requireNonNull(state, "cannot attach callback to null state"));
             if (s.onExit == null) {
                 s.onExit = callback;
             } else {
@@ -728,8 +728,8 @@ public final class FSM<S, T> {
             return this;
         }
 
-        private BaseState str2state(String state) {
-            return (BaseState) stateMap.s2state(state);
+        private BaseState<T> str2state(String state) {
+            return (BaseState<T>) stateMap.s2state(state);
         }
 
     }
@@ -740,10 +740,10 @@ public final class FSM<S, T> {
      *
      * @author Robert Russell
      */
-    public static final class BuilderFromEnum<S extends Enum<S> & State, T>
+    public static final class BuilderFromEnum<S extends Enum<S> & State<S, T>, T>
             extends Builder<S, T, BuilderFromEnum<S, T>> {
 
-        BuilderFromEnum(Class<S> stateEnum, Supplier<Map<T, Transition<T>>> mapSupplier) {
+        BuilderFromEnum(Class<S> stateEnum, Supplier<Map<T, Transition<S, T>>> mapSupplier) {
             // EnumStateMap constructor guarantees stateEnum has > 0 constants.
             super(new EnumStateMap<>(stateEnum, mapSupplier));
         }
@@ -825,7 +825,7 @@ public final class FSM<S, T> {
      * @throws NullPointerException if the given state enum class is {@code null}.
      * @throws IllegalArgumentException if the given state enum has zero constants.
      */
-    public static <S extends Enum<S> & State> BuilderFromEnum<S, String> builder(Class<S> stateEnum) {
+    public static <S extends Enum<S> & State<S, String>> BuilderFromEnum<S, String> builder(Class<S> stateEnum) {
         return new BuilderFromEnum<>(
                 Objects.requireNonNull(stateEnum, "stateEnum must be non-null"),
                 HashMap::new
@@ -847,7 +847,7 @@ public final class FSM<S, T> {
      * @throws NullPointerException if the given state enum class is {@code null}.
      * @throws IllegalArgumentException if the given state enum has zero constants.
      */
-    public static <S extends Enum<S> & State, T extends Enum<T>> BuilderFromEnum<S, T> builder(
+    public static <S extends Enum<S> & State<S, T>, T extends Enum<T>> BuilderFromEnum<S, T> builder(
             Class<T> triggerEnum, Class<S> stateEnum
     ) {
         Objects.requireNonNull(triggerEnum, "triggerEnum must be non-null");
@@ -858,10 +858,10 @@ public final class FSM<S, T> {
     }
 
     private final boolean ignoreInvalidTriggers;
-    private final EventFunction beforeAll;
-    private final Consumer<Event> afterAll;
+    private final EventFunction<S, T> beforeAll;
+    private final Consumer<Event<S, T>> afterAll;
     private final StateMap<S, T> stateMap;
-    private StateBundle<T> currSB;
+    private StateBundle<S, T> currSB;
 
     /**
      * {@code stateChanging} is true if a state change/transition is in process; false otherwise.
@@ -873,7 +873,7 @@ public final class FSM<S, T> {
      */
     private final Deque<Runnable> queue = new ArrayDeque<>();
 
-    private FSM(Builder<S, T, ?> builder, StateBundle<T> initial) {
+    private FSM(Builder<S, T, ?> builder, StateBundle<S, T> initial) {
         ignoreInvalidTriggers = builder.ignoreInvalidTriggers;
         beforeAll = builder.beforeAll;
         afterAll = builder.afterAll;
@@ -895,7 +895,7 @@ public final class FSM<S, T> {
      *
      * @return the {@linkplain State state} the {@code FSM} is currently in.
      */
-    public State getStateObj() {
+    public State<S, T> getStateObj() {
         return currSB.state;
     }
 
@@ -1072,7 +1072,7 @@ public final class FSM<S, T> {
      * @throws IllegalArgumentException if the given state is inaccessible.
      */
     public void forceTo(S state, Map<String, Object> args) {
-        StateBundle<T> sb = stateMap.s2bundle(
+        StateBundle<S, T> sb = stateMap.s2bundle(
                 Objects.requireNonNull(state, "cannot force transition to null state")
         );
         if (sb == null) {
@@ -1091,7 +1091,7 @@ public final class FSM<S, T> {
         }
     }
 
-    private void forceToUnqueued(StateBundle<T> sb, Map<String, Object> args) {
+    private void forceToUnqueued(StateBundle<S, T> sb, Map<String, Object> args) {
         // "Lock" the FSM.
         assert !stateChanging;
         stateChanging = true;
@@ -1302,7 +1302,7 @@ public final class FSM<S, T> {
         stateChanging = true;
 
         // Resolve the transition.
-        Transition<T> transition = currSB.resolveTransition(trigger);
+        Transition<S, T> transition = currSB.resolveTransition(trigger);
         if (transition == null) {
             // I.e. if the trigger is invalid...
             if (!ignoreInvalidTriggers && !currSB.state.getIgnoreInvalidTriggers()) {
@@ -1314,7 +1314,7 @@ public final class FSM<S, T> {
         }
 
         // Resolve the destination state.
-        StateBundle<T> dst = transition.resolveDst(currSB);
+        StateBundle<S, T> dst = transition.resolveDst(currSB);
 
         // Prepare event object.
         if (args == null) {
@@ -1353,17 +1353,17 @@ public final class FSM<S, T> {
         }
     }
 
-    private boolean beforeAll(Event event) {
+    private boolean beforeAll(Event<S, T> event) {
         return beforeAll == null || beforeAll.apply(event);
     }
 
-    private void afterAll(Event event) {
+    private void afterAll(Event<S, T> event) {
         if (afterAll != null) {
             afterAll.accept(event);
         }
     }
 
-    private static void chainOnExitCallbacks(State state, Event event) {
+    private static <S, T> void chainOnExitCallbacks(State<S, T> state, Event<S, T> event) {
         if (state != null) {
             // Call the ancestors' callbacks second, as per specification.
             state.onExit(event);
@@ -1371,7 +1371,7 @@ public final class FSM<S, T> {
         }
     }
 
-    private static void chainOnEnterCallbacks(State state, Event event) {
+    private static <S, T> void chainOnEnterCallbacks(State<S, T> state, Event<S, T> event) {
         if (state != null) {
             // Call the ancestors' callbacks first, as per specification.
             chainOnEnterCallbacks(state.getParent(), event);

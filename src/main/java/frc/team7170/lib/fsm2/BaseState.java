@@ -2,22 +2,26 @@ package frc.team7170.lib.fsm2;
 
 import java.util.function.Consumer;
 
+// TODO: rename to StringState
+
 /**
  * A basic implementation of {@link State State} used internally for when a {@link FSM FSM} is instantiated using
  * strings to represent states.
  *
+ * @param <T> the trigger type.
+ *
  * @author Robert Russell
  */
-class BaseState implements State {
+class BaseState<T> implements State<String, T> {
 
     private final String name;
-    private State parent;
+    private State<String, T> parent;
     boolean accessible = false;
     boolean ignoreInvalidTriggers = false;
-    Consumer<Event> onEnter = null;
-    Consumer<Event> onExit = null;
+    Consumer<Event<String, T>> onEnter = null;
+    Consumer<Event<String, T>> onExit = null;
 
-    BaseState(String name, State parent) {
+    BaseState(String name, State<String, T> parent) {
         this.name = name;
         this.parent = parent;
     }
@@ -28,7 +32,7 @@ class BaseState implements State {
     }
 
     @Override
-    public State getParent() {
+    public State<String, T> getParent() {
         return parent;
     }
 
@@ -43,14 +47,14 @@ class BaseState implements State {
     }
 
     @Override
-    public void onEnter(Event event) {
+    public void onEnter(Event<String, T> event) {
         if (onEnter != null) {
             onEnter.accept(event);
         }
     }
 
     @Override
-    public void onExit(Event event) {
+    public void onExit(Event<String, T> event) {
         if (onExit != null) {
             onExit.accept(event);
         }

@@ -12,7 +12,7 @@ import java.util.function.Supplier;
  */
 class StringStateMap<T> implements StateMap<String, T> {
 
-    private final Map<String, StateBundle<T>> bundleMap;
+    private final Map<String, StateBundle<String, T>> bundleMap;
 
     /**
      * @param states an array of states.
@@ -21,23 +21,23 @@ class StringStateMap<T> implements StateMap<String, T> {
      * @throws IllegalArgumentException if the given state array is empty.
      * @throws IllegalArgumentException if the given state array contains duplicate elements.
      */
-    StringStateMap(String[] states, Supplier<Map<T, Transition<T>>> mapSupplier) {
+    StringStateMap(String[] states, Supplier<Map<T, Transition<String, T>>> mapSupplier) {
         if (states.length == 0) {
             throw new IllegalArgumentException("state machines must have at least one state");
         }
         // Most applications will not nest states, so this initial size is appropriate.
         bundleMap = new HashMap<>(states.length);
         for (String state : states) {
-            BaseState last = null;
+            BaseState<T> last = null;
             for (String seg : StringStateMap.getLineage(
                     Objects.requireNonNull(state, "state must be non-null")
             )) {
-                StateBundle<T> sb = bundleMap.get(seg);
+                StateBundle<String, T> sb = bundleMap.get(seg);
                 if (sb == null) {
-                    last = new BaseState(seg.substring(seg.lastIndexOf(FSM.SUB_STATE_SEP)+1), last);
+                    last = new BaseState<>(seg.substring(seg.lastIndexOf(FSM.SUB_STATE_SEP)+1), last);
                     bundleMap.put(seg, new StateBundle<>(last, mapSupplier));
                 } else {
-                    last = (BaseState) sb.state;
+                    last = (BaseState<T>) sb.state;
                 }
             }
             // getLineage always returns a list with at least one element (i.e. at least the leaf state); if the last
@@ -54,13 +54,13 @@ class StringStateMap<T> implements StateMap<String, T> {
     }
 
     @Override
-    public String state2s(State state) {
+    public String state2s(State<String, T> state) {
         return State.fullName(state);
     }
 
     @Override
-    public State s2state(String s) {
-        StateBundle<T> sb = bundleMap.get(s);
+    public State<String, T> s2state(String s) {
+        StateBundle<String, T> sb = bundleMap.get(s);
         if (sb == null) {
             throw new IllegalArgumentException(String.format("unknown state: '%s'", s));
         }
@@ -68,7 +68,7 @@ class StringStateMap<T> implements StateMap<String, T> {
     }
 
     @Override
-    public StateBundle<T> s2bundle(String s) {
+    public StateBundle<String, T> s2bundle(String s) {
         return bundleMap.get(s);
     }
 

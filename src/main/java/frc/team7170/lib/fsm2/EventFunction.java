@@ -12,7 +12,7 @@ import java.util.Objects;
  * @author Robert Russell
  */
 @FunctionalInterface
-public interface EventFunction {
+public interface EventFunction<S, T> {
 
     /**
      * Apply the given input to this {@code EventFunction}.
@@ -20,7 +20,7 @@ public interface EventFunction {
      * @param event the {@link Event Event} argument.
      * @return a boolean.
      */
-    boolean apply(Event event);
+    boolean apply(Event<S, T> event);
 
     /**
      * Return an {@code EventFunction} that first applies its argument to this {@code EventFunction} and then to the
@@ -31,7 +31,7 @@ public interface EventFunction {
      * @return an {@code EventFunction} sequentially composed of this {@code EventFunction} and the given one.
      * @throws NullPointerException if the given {@code EventFunction} is {@code null}.
      */
-    default EventFunction seqCompose(EventFunction other) {
+    default EventFunction<S, T> seqCompose(EventFunction<S, T> other) {
         Objects.requireNonNull(other);
         return event -> apply(event) && other.apply(event);
     }

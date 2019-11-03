@@ -7,6 +7,9 @@ import java.util.Map;
 /**
  * {@code Event} represents the immutable context for a transition/state change in a {@link FSM FSM}.
  *
+ * @param <S> the state type.
+ * @param <T> the trigger type.
+ *
  * @author Robert Russell
  */
 public final class Event<S, T> {
@@ -20,13 +23,13 @@ public final class Event<S, T> {
      * The src (source) {@linkplain State state} (i.e. the state being transitioned from). The src and dst (destination)
      * states are equal for internal transitions and reflexive transitions.
      */
-    public final State src;
+    public final State<S, T> src;
 
     /**
      * The dst (destination) {@linkplain State state} (i.e. the state being transitioned to). The dst and src (source)
      * states are equal for internal transitions and reflexive transitions.
      */
-    public final State dst;
+    public final State<S, T> dst;
 
     /**
      * The trigger that caused the state change. If the state change was forced (i.e. via one of the {@code forceTo}
@@ -51,8 +54,8 @@ public final class Event<S, T> {
     public final Map<String, Object> args;
 
     Event(FSM<S, T> machine,
-          State src,
-          State dst,
+          State<S, T> src,
+          State<S, T> dst,
           T trigger,
           Map<String, Object> args) {
         this.machine = machine;
