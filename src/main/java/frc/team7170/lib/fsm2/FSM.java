@@ -1103,7 +1103,7 @@ public final class FSM<S, T> {
 
         // Prepare event object.
         if (args == null) {
-            args = Map.of();
+            args = new HashMap<>();
         }
         Event<S, T> event = new Event<>(
                 this,
@@ -1318,7 +1318,7 @@ public final class FSM<S, T> {
 
         // Prepare event object.
         if (args == null) {
-            args = Map.of();
+            args = new HashMap<>();
         }
         Event<S, T> event = new Event<>(this, currSB.state, dst.state, trigger, args);
 
