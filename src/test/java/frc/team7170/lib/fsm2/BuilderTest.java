@@ -16,7 +16,11 @@ public class BuilderTest {
         X
     }
 
-    private enum S1 implements State<S1, T1> {
+    private enum S1 implements State<S1, String> {
+        X
+    }
+
+    private enum S1T1 implements State<S1T1, T1> {
         X
     }
 
@@ -31,7 +35,7 @@ public class BuilderTest {
                 () -> assertNPE(FSM::builder, "A"),
                 () -> assertNPE(FSM::builder, T1.class, "A"),
                 () -> assertNPE(FSM::builder, S1.class),
-                () -> assertNPE(FSM::builder, T1.class, S1.class),
+                () -> assertNPE(FSM::builder, T1.class, S1T1.class),
 
                 // Instance methods
                 () -> assertNPE((TestUtil.M1<Runnable>) b::afterAll, () -> {}),
