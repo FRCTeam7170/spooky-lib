@@ -9,8 +9,10 @@ import java.util.Objects;
  * Considering the restrictions on instantiation of {@code FSMs}, implementing this interface on anything other than an
  * enum is pointless.
  *
- * @param <S> the state type. For enum implementors, this should be the enum type.
- * @param <T> the trigger type.
+ * @param <S> the state type. For user/enum implementations, this should be the enum type (an FSM cannot be instantiated
+ *           otherwise).
+ * @param <T> the trigger type. This should either be {@code String} or an enum type (an FSM cannot be instantiated
+ *           otherwise).
  *
  * @author Robert Russell
  */
