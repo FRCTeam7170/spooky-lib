@@ -127,6 +127,7 @@ public final class Units {
      * @return the value in RPM.
      */
     public static double rad_s2rpm(double rad_s) {
+        // 1/(2pi) revolutions per radian; 60 seconds per minute.
         return rad_s / (2 * Math.PI) * 60.0;
     }
 
@@ -137,6 +138,7 @@ public final class Units {
      * @return the value in radians per second.
      */
     public static double rpm2rad_s(double rpm) {
+        // 2pi radians per revolution; 1/60 minutes per second.
         return rpm * (2 * Math.PI) / 60.0;
     }
 
