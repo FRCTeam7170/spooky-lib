@@ -17,7 +17,7 @@ public final class Units {
     /**
      * The number of feet in a metre.
      */
-    public static final double FT_PER_M = 3.28084;
+    public static final double FT_PER_M = 3.28083989501312;
 
     /**
      * The number of inches in a foot.
@@ -27,7 +27,7 @@ public final class Units {
     /**
      * The number of pounds in a kilogram.
      */
-    public static final double LB_PER_KG = 2.20462;
+    public static final double LB_PER_KG = 2.2046226218488;
 
     /**
      * Gravitational acceleration in metres per second squared.
@@ -188,7 +188,7 @@ public final class Units {
      * @return the value in revolutions.
      */
     public static double deg2rev(double deg) {
-        return deg / 360;
+        return deg / 360.0;
     }
 
     /**
@@ -198,6 +198,6 @@ public final class Units {
      * @return the value in degrees.
      */
     public static double rev2deg(double rev) {
-        return 360 * rev;
+        return rev * 360.0;
     }
 }
