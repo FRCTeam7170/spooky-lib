@@ -14,6 +14,9 @@ package frc.team7170.lib;
  */
 public final class Units {
 
+    // Prevent instantiation.
+    private Units() {}
+
     /**
      * The number of feet in a metre.
      */
